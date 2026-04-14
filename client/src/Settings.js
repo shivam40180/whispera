@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const API = 'http://192.168.0.102:5001';
+const API = 'https://whispera-api.onrender.com';
 
 export default function Settings({ currentUser, token, onUpdate, onClose, onLogout }) {
   const [username, setUsername] = useState(currentUser.username);
