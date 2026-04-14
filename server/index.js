@@ -22,7 +22,13 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-mongoose.connect(process.env.MONGO_URI).catch(err => console.error('DB error:', err));
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', db: mongoose.connection.readyState });
+});
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ DB Error:', err.message));
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
