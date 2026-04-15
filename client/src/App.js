@@ -700,12 +700,13 @@ console.log("FINAL:", `${API}${endpoint}`);
           </div>
           {viewingStatus.username === currentUser?.username && (
             <div style={{ position:'absolute', bottom:30, left:0, right:0, textAlign:'center' }}>
-              <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.1)', padding:'8px 16px', borderRadius:20 }}>
-                <span>👁️</span>
-                <span style={{ color:'#fff', fontSize:13, fontWeight:600 }}>{viewingStatus.status.views?.length || 0} views</span>
-                {viewingStatus.status.views?.length > 0 && (
-                  <span style={{ color:'#7a5c52', fontSize:12 }}>({viewingStatus.status.views.join(', ')})</span>
-                )}
+              <div style={{ display:'inline-flex', alignItems:'center', gap:10 }}>
+                <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.1)', padding:'8px 16px', borderRadius:20 }}>
+                  <span>👁️</span>
+                  <span style={{ color:'#fff', fontSize:13, fontWeight:600 }}>{viewingStatus.status.views?.length || 0} views</span>
+                </div>
+                <button onClick={async () => { await fetch(`${API}/status/${viewingStatus.status._id}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}` } }); setViewingStatus(null); }}
+                  style={{ background:'rgba(196,104,90,0.9)', border:'none', color:'#fff', fontSize:13, fontWeight:700, padding:'8px 16px', borderRadius:20, cursor:'pointer' }}>🗑️ Delete</button>
               </div>
             </div>
           )}
