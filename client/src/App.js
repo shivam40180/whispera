@@ -726,7 +726,7 @@ console.log("FINAL:", `${API}${endpoint}`);
           )}
           <div className="anim-scaleIn" style={{ maxWidth:500, width:'100%', textAlign:'center', padding:20 }}>
             {viewingStatus.status.type==='text' && <div style={{ fontSize:26, color:'#fff', fontWeight:600, lineHeight:1.5 }}>{viewingStatus.status.content}</div>}
-            {viewingStatus.status.type==='image' && <img src={viewingStatus.status.fileUrl} alt="status" style={{ maxWidth:'100%', maxHeight:'70vh', borderRadius:12 }} />}
+            {viewingStatus.status.type==='image' && <img src={viewingStatus.status.fileUrl} alt="status" onError={e=>{e.target.style.display='none'}} style={{ maxWidth:'100%', maxHeight:'70vh', borderRadius:12 }} />}
             {viewingStatus.status.type==='video' && <video src={viewingStatus.status.fileUrl} controls autoPlay style={{ maxWidth:'100%', maxHeight:'70vh', borderRadius:12 }} />}
             {viewingStatus.status.type==='audio' && <audio src={viewingStatus.status.fileUrl} controls autoPlay style={{ width:'100%' }} />}
           </div>
@@ -919,7 +919,7 @@ console.log("FINAL:", `${API}${endpoint}`);
                           }}
                             style={{ width:56, height:56, borderRadius:10, background:'#fdf8f5', border:'2px solid #b76e79', cursor:'pointer', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'transform 0.15s', animation:'statusRing 2s ease infinite' }}>
                             {st.type==='text' && <div style={{ fontSize:9, color:'#f0e6de', padding:3, textAlign:'center', overflow:'hidden', lineHeight:1.3 }}>{st.content?.slice(0,20)}</div>}
-                            {st.type==='image' && <img src={st.fileUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />}
+                            {st.type==='image' && <img src={st.fileUrl} alt="" onError={e=>{e.target.style.display='none'}} style={{ width:'100%', height:'100%', objectFit:'cover' }} />}
                             {st.type==='video' && <div style={{ fontSize:18 }}>🎬</div>}
                             {st.type==='audio' && <div style={{ fontSize:18 }}>🎵</div>}
                           </div>
@@ -1062,7 +1062,7 @@ console.log("FINAL:", `${API}${endpoint}`);
                               onContextMenu={e => { e.preventDefault(); setMsgContextMenu({ msgId:c._id, x:e.clientX, y:e.clientY, seenAt:c.seenAt, mine }); }}
                               style={{ display:'inline-block', padding:'10px 14px', borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', background: mine ? 'linear-gradient(135deg,#b76e79,#a05a64)' : '#f0e6de', border: mine ? 'none' : '1px solid #e8d5c8', color:'#2d1f1a', fontSize:14, lineHeight:1.6, wordBreak:'normal', overflowWrap:'break-word', whiteSpace:'pre-wrap', boxShadow: mine ? '0 4px 16px rgba(183,110,121,0.25)' : 'none' }}
                             >
-                              {c.fileType==='image' && <img src={c.fileUrl} alt="img" style={{ maxWidth:'100%', borderRadius:8, display:'block', marginBottom: c.text ? 6 : 0 }} />}
+                              {c.fileType==='image' && <img src={c.fileUrl} alt="img" onError={e=>{e.target.onerror=null;e.target.style.display='none';e.target.insertAdjacentHTML('afterend','<div style="color:#a88070;fontSize:12px;padding:8px">📷 Image unavailable</div>');}} style={{ maxWidth:'100%', borderRadius:8, display:'block', marginBottom: c.text ? 6 : 0 }} />}
                               {c.fileType==='video' && <video src={c.fileUrl} controls style={{ maxWidth:'100%', borderRadius:8, display:'block', marginBottom: c.text ? 6 : 0 }} />}
                               {c.fileType==='audio' && <audio src={c.fileUrl} controls style={{ width:'100%', marginBottom: c.text ? 6 : 0 }} />}
                               {c.fileType==='file' && <a href={c.fileUrl} target="_blank" rel="noreferrer" style={{ color:'#d4b8a8', fontSize:13, display:'block', marginBottom: c.text ? 6 : 0 }}>📎 {c.fileName}</a>}
