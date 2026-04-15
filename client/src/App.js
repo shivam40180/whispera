@@ -811,6 +811,9 @@ console.log("FINAL:", `${API}${endpoint}`);
               {key==='requests' && requests.length>0 && (
                 <span className="anim-popIn" style={{ position:'absolute', top:-4, right:-4, background:'#c4685a', color:'#fff', fontSize:9, fontWeight:700, borderRadius:10, padding:'1px 5px', minWidth:16, textAlign:'center' }}>{requests.length}</span>
               )}
+              {key==='chats' && Object.values(unread).reduce((a,b)=>a+b,0)>0 && tab!=='chats' && (
+                <span className="anim-popIn" style={{ position:'absolute', top:-4, right:-4, background:'#c4685a', color:'#fff', fontSize:9, fontWeight:700, borderRadius:10, padding:'1px 5px', minWidth:16, textAlign:'center' }}>{Object.values(unread).reduce((a,b)=>a+b,0)}</span>
+              )}
             </button>
           ))}
         </div>
