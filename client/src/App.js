@@ -703,6 +703,7 @@ console.log("FINAL:", `${API}${endpoint}`);
           currentUser={currentUser}
           token={token}
           onClose={() => setShowSettings(false)}
+          onLogout={handleLogout}
           onUpdate={(user, tok) => {
             setCurrentUser(user);
             setToken(tok);
@@ -1304,7 +1305,7 @@ console.log("FINAL:", `${API}${endpoint}`);
       {/* In-app message notification toast */}
       {msgNotif && (
         <div onClick={() => { setActiveContact(msgNotif.sender); setMsgNotif(null); }}
-          style={{ position:'fixed', bottom:24, left:24, zIndex:9999, display:'flex', alignItems:'center', gap:10, background:'#2d1f1a', border:'1px solid #b76e79', borderRadius:16, padding:'12px 16px', boxShadow:'0 8px 32px rgba(0,0,0,0.5)', cursor:'pointer', maxWidth:300, animation:'slideInLeft 0.3s ease' }}>
+          style={{ position:'fixed', bottom:24, right:24, zIndex:9999, display:'flex', alignItems:'center', gap:10, background:'#2d1f1a', border:'1px solid #b76e79', borderRadius:16, padding:'12px 16px', boxShadow:'0 8px 32px rgba(0,0,0,0.5)', cursor:'pointer', maxWidth:300, animation:'slideInLeft 0.3s ease' }}>
           <div style={{ width:38, height:38, borderRadius:'50%', background:'linear-gradient(135deg,#b76e79,#a05a64)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:'#fff', flexShrink:0 }}>
             {msgNotif.sender[0].toUpperCase()}
           </div>
