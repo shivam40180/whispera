@@ -24,7 +24,7 @@ function postedAt(d) {
   return new Date(d).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export default function StatusViewer({ token, currentUser, onClose }) {
+export default function StatusViewer({ token, currentUser, onClose, open }) {
   const [statuses, setStatuses] = useState([]);
   const [viewing, setViewing] = useState(null);
   const [newText, setNewText] = useState('');
@@ -40,7 +40,7 @@ export default function StatusViewer({ token, currentUser, onClose }) {
     setStatuses(Array.isArray(data) ? data : []);
   };
 
-  useEffect(() => { reloadStatuses(); }, [token]);
+  useEffect(() => { reloadStatuses(); }, [token, open]);
   useEffect(() => { if (tab === 'view') reloadStatuses(); }, [tab]);
 
   useEffect(() => {

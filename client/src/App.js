@@ -683,7 +683,7 @@ console.log("FINAL:", `${API}${endpoint}`);
         />
       )}
       {showStatus && (
-        <StatusViewer token={token} currentUser={currentUser} onClose={() => setShowStatus(false)} />
+        <StatusViewer token={token} currentUser={currentUser} onClose={() => setShowStatus(false)} open={showStatus} />
       )}
 
       {/* Status fullscreen viewer */}
