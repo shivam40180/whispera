@@ -108,6 +108,14 @@ export default function App() {
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [msgSearch, setMsgSearch] = useState('');
   const [showMsgSearch, setShowMsgSearch] = useState(false);
+  const [callState, setCallState] = useState(null); // null | 'calling' | 'incoming' | 'active'
+  const [callWith, setCallWith] = useState(null);
+  const [callType, setCallType] = useState('video'); // 'video' | 'audio'
+  const [incomingCall, setIncomingCall] = useState(null);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const pcRef = useRef(null);
+  const localStreamRef = useRef(null);
 
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -309,7 +317,23 @@ export default function App() {
           return updated;
         });
       }
-    });    socket.on('userOffline', (username) => setOnlineFriends(prev => prev.filter(u => u !== username)));
+    });
+
+    // WebRTC call events
+    socket.on('call:offer', ({ from, offer }) => {
+      setIncomingCall({ from, offer });
+      setCallState('incoming');
+    });
+    socket.on('call:answer', async ({ answer }) => {
+      if (pcRef.current) await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+      setCallState('active');
+    });
+    socket.on('call:ice', async ({ candidate }) => {
+      if (pcRef.current && candidate) await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+    });
+    socket.on('call:rejected', () => { endCall(); alert('Call rejected.'); });
+    socket.on('call:ended',    () => endCall());
+    socket.on('call:busy',     () => { endCall(); alert('User is busy.'); });    socket.on('userOffline', (username) => setOnlineFriends(prev => prev.filter(u => u !== username)));
     socket.on('onlineFriendsList', (list) => setOnlineFriends(list));
 
     socket.on('messagesSeen', ({ by, at }) => {
@@ -578,6 +602,65 @@ console.log("FINAL:", `${API}${endpoint}`);
     const lastMsg = msgs[msgs.length - 1];
     if (lastMsg.sender === me) return;
     socket.emit('getSuggestion', { text: lastMsg.text, requester: me });
+  };
+
+  const createPC = (targetUser) => {
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] });
+    pc.onicecandidate = e => { if (e.candidate) socket.emit('call:ice', { to: targetUser, candidate: e.candidate }); };
+    pc.ontrack = e => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
+    return pc;
+  };
+
+  const startCall = async (type) => {
+    if (callState) return;
+    setCallType(type);
+    setCallWith(activeContact);
+    setCallState('calling');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
+      localStreamRef.current = stream;
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      const pc = createPC(activeContact);
+      pcRef.current = pc;
+      stream.getTracks().forEach(t => pc.addTrack(t, stream));
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('call:offer', { to: activeContact, from: currentUser.username, offer });
+    } catch { endCall(); alert('Could not access camera/microphone.'); }
+  };
+
+  const answerCall = async () => {
+    if (!incomingCall) return;
+    setCallWith(incomingCall.from);
+    setCallState('active');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: callType === 'video', audio: true });
+      localStreamRef.current = stream;
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      const pc = createPC(incomingCall.from);
+      pcRef.current = pc;
+      stream.getTracks().forEach(t => pc.addTrack(t, stream));
+      await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('call:answer', { to: incomingCall.from, answer });
+      setIncomingCall(null);
+    } catch { endCall(); }
+  };
+
+  const endCall = (target) => {
+    const to = target || callWith;
+    if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
+    if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; }
+    if (to) socket.emit('call:end', { to });
+    setCallState(null); setCallWith(null); setIncomingCall(null);
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+  };
+
+  const rejectCall = () => {
+    if (incomingCall) socket.emit('call:reject', { to: incomingCall.from });
+    setCallState(null); setIncomingCall(null);
   };
 
   const handleLogout = () => {
@@ -1051,6 +1134,10 @@ console.log("FINAL:", `${API}${endpoint}`);
                 </div>
               </div>
 
+              {/* Call buttons */}
+              <button onClick={() => startCall('video')} style={{ background:'none', border:'none', color:'#a88070', fontSize:20, cursor:'pointer', padding:'4px 8px' }} title="Video Call">📹</button>
+              <button onClick={() => startCall('audio')} style={{ background:'none', border:'none', color:'#a88070', fontSize:20, cursor:'pointer', padding:'4px 8px' }} title="Audio Call">📞</button>
+
               {/* Message search toggle */}
               <button onClick={() => setShowMsgSearch(p => !p)} style={{ background:'none', border:'none', color:'#a88070', fontSize:18, cursor:'pointer', padding:'4px 8px' }} title="Search messages">🔍</button>
 
@@ -1322,6 +1409,40 @@ console.log("FINAL:", `${API}${endpoint}`);
           </>
         )}
       </div>
+
+      {/* Incoming call */}
+      {callState === 'incoming' && incomingCall && (
+        <div className="anim-fadeIn" style={{ position:'fixed', inset:0, zIndex:9998, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#1a1a2e', borderRadius:24, padding:'36px 40px', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.8)', minWidth:280 }}>
+            <div style={{ fontSize:60, marginBottom:12 }}>{callType === 'video' ? '📹' : '📞'}</div>
+            <div style={{ color:'#fff', fontSize:18, fontWeight:700, marginBottom:6 }}>{incomingCall.from}</div>
+            <div style={{ color:'#a88070', fontSize:13, marginBottom:28 }}>Incoming {callType} call...</div>
+            <div style={{ display:'flex', gap:16, justifyContent:'center' }}>
+              <button onClick={rejectCall} style={{ width:60, height:60, borderRadius:'50%', background:'#e94560', border:'none', fontSize:24, cursor:'pointer' }}>🔴</button>
+              <button onClick={answerCall} style={{ width:60, height:60, borderRadius:'50%', background:'#22c55e', border:'none', fontSize:24, cursor:'pointer' }}>🟢</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active call / calling screen */}
+      {(callState === 'active' || callState === 'calling') && (
+        <div className="anim-fadeIn" style={{ position:'fixed', inset:0, zIndex:9997, background:'#000', display:'flex', flexDirection:'column' }}>
+          {/* Remote video */}
+          <video ref={remoteVideoRef} autoPlay playsInline style={{ flex:1, width:'100%', objectFit:'cover', background:'#111' }} />
+          {/* Local video pip */}
+          <video ref={localVideoRef} autoPlay playsInline muted style={{ position:'absolute', bottom:100, right:16, width:100, height:140, borderRadius:12, objectFit:'cover', border:'2px solid #fff', background:'#222' }} />
+          {/* Status */}
+          <div style={{ position:'absolute', top:40, left:0, right:0, textAlign:'center' }}>
+            <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>{callWith}</div>
+            <div style={{ color:'rgba(255,255,255,0.6)', fontSize:13 }}>{callState === 'calling' ? 'Calling...' : 'Connected'}</div>
+          </div>
+          {/* End call button */}
+          <div style={{ position:'absolute', bottom:32, left:0, right:0, display:'flex', justifyContent:'center' }}>
+            <button onClick={endCall} style={{ width:64, height:64, borderRadius:'50%', background:'#e94560', border:'none', fontSize:28, cursor:'pointer', boxShadow:'0 4px 20px rgba(233,69,96,0.5)' }}>🔴</button>
+          </div>
+        </div>
+      )}
 
       {/* Avatar preview */}
       {showAvatarPreview && activeContact && (
