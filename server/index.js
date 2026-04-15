@@ -302,7 +302,9 @@ app.get('/user/:username', auth, async (req, res) => {
 app.get('/messages/:otherUsername', auth, async (req, res) => {
   try {
     const msgs = await Message.find({
-      $or: [{ sender: req.user.username, receiver: req.params.otherUsername }, { sender: req.params.otherUsername, receiver: req.user.username }]
+      $or: [{ sender: req.user.username, receiver: req.params.otherUsername }, { sender: req.params.otherUsername, receiver: req.user.username }],
+      deletedFor: { $nin: [req.user.username] },
+      deletedForEveryone: { $ne: true }
     }).sort({ createdAt: 1 }).limit(100);
     res.json(msgs);
   } catch { res.status(500).json({ error: 'Failed' }); }
@@ -331,6 +333,28 @@ app.post('/messages/:id/react', auth, async (req, res) => {
     io.to(other).emit('messageReaction', { msgId: msg._id, reactions: msg.reactions });
     io.to(req.user.username).emit('messageReaction', { msgId: msg._id, reactions: msg.reactions });
     res.json({ reactions: msg.reactions });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/messages/:id', auth, async (req, res) => {
+  try {
+    const msg = await Message.findById(req.params.id);
+    if (!msg) return res.status(404).json({ error: 'Not found' });
+    const { type } = req.body;
+    if (type === 'everyone' && msg.sender === req.user.username) {
+      msg.deletedForEveryone = true;
+      msg.text = '';
+      msg.fileUrl = null;
+      await msg.save();
+      const other = msg.receiver === req.user.username ? msg.sender : msg.receiver;
+      io.to(other).emit('messageDeleted', { msgId: msg._id, type: 'everyone' });
+      io.to(req.user.username).emit('messageDeleted', { msgId: msg._id, type: 'everyone' });
+    } else {
+      if (!msg.deletedFor.includes(req.user.username)) msg.deletedFor.push(req.user.username);
+      await msg.save();
+      io.to(req.user.username).emit('messageDeleted', { msgId: msg._id, type: 'me' });
+    }
+    res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

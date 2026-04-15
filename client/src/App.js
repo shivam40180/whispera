@@ -262,6 +262,21 @@ export default function App() {
     });
     socket.on('profilePicChanged', ({ username, profilePic }) => {
       setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], profilePic } }));
+    });
+    socket.on('messageDeleted', ({ msgId, type }) => {
+      if (type === 'everyone') {
+        setChats(prev => {
+          const updated = {};
+          for (const key in prev) updated[key] = prev[key].filter(m => m._id !== msgId);
+          return updated;
+        });
+      } else {
+        setChats(prev => {
+          const updated = {};
+          for (const key in prev) updated[key] = prev[key].filter(m => m._id !== msgId);
+          return updated;
+        });
+      }
     });    socket.on('userOffline', (username) => setOnlineFriends(prev => prev.filter(u => u !== username)));
     socket.on('onlineFriendsList', (list) => setOnlineFriends(list));
 
@@ -1159,6 +1174,20 @@ console.log("FINAL:", `${API}${endpoint}`);
                     onClick={() => { setShowEmojiFor(msgContextMenu.msgId); setMsgContextMenu(null); }}>
                     😊 React
                   </div>
+                  <div style={{ padding:'10px 16px', fontSize:13, color:'#c4685a', cursor:'pointer', borderTop:'1px solid #e8d5c8' }}
+                    onClick={async () => {
+                      await fetch(`${API}/messages/${msgContextMenu.msgId}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ type:'me' }) });
+                      setChats(prev => ({ ...prev, [activeContact]: prev[activeContact].filter(m => m._id !== msgContextMenu.msgId) }));
+                      setMsgContextMenu(null);
+                    }}>🗑️ Delete for Me</div>
+                  {msgContextMenu.mine && (
+                    <div style={{ padding:'10px 16px', fontSize:13, color:'#c4685a', cursor:'pointer', borderTop:'1px solid #e8d5c8', fontWeight:600 }}
+                      onClick={async () => {
+                        await fetch(`${API}/messages/${msgContextMenu.msgId}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ type:'everyone' }) });
+                        setChats(prev => ({ ...prev, [activeContact]: prev[activeContact].filter(m => m._id !== msgContextMenu.msgId) }));
+                        setMsgContextMenu(null);
+                      }}>🗑️ Delete for Everyone</div>
+                  )}
                 </div>
               </div>
             )}

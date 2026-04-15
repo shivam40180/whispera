@@ -11,6 +11,8 @@ const schema = new mongoose.Schema({
   replyTo: { _id: String, sender: String, text: String, fileType: String },
   reactions: [{ username: String, emoji: String }],
   seenAt: { type: Date, default: null },
+  deletedFor: [String],
+  deletedForEveryone: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
