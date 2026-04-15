@@ -320,8 +320,9 @@ export default function App() {
     });
 
     // WebRTC call events
-    socket.on('call:offer', ({ from, offer }) => {
+    socket.on('call:offer', ({ from, offer, type }) => {
       setIncomingCall({ from, offer });
+      setCallType(type || 'video');
       setCallState('incoming');
     });
     socket.on('call:answer', async ({ answer }) => {
@@ -625,7 +626,7 @@ console.log("FINAL:", `${API}${endpoint}`);
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      socket.emit('call:offer', { to: activeContact, from: currentUser.username, offer });
+      socket.emit('call:offer', { to: activeContact, from: currentUser.username, offer, type });
     } catch { endCall(); alert('Could not access camera/microphone.'); }
   };
 
@@ -1416,7 +1417,7 @@ console.log("FINAL:", `${API}${endpoint}`);
           <div style={{ background:'#1a1a2e', borderRadius:24, padding:'36px 40px', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.8)', minWidth:280 }}>
             <div style={{ fontSize:60, marginBottom:12 }}>{callType === 'video' ? '📹' : '📞'}</div>
             <div style={{ color:'#fff', fontSize:18, fontWeight:700, marginBottom:6 }}>{incomingCall.from}</div>
-            <div style={{ color:'#a88070', fontSize:13, marginBottom:28 }}>Incoming {callType} call...</div>
+            <div style={{ color:'#a88070', fontSize:13, marginBottom:28 }}>Incoming {callType === 'video' ? 'video' : 'audio'} call...</div>
             <div style={{ display:'flex', gap:16, justifyContent:'center' }}>
               <button onClick={rejectCall} style={{ width:60, height:60, borderRadius:'50%', background:'#e94560', border:'none', fontSize:24, cursor:'pointer' }}>🔴</button>
               <button onClick={answerCall} style={{ width:60, height:60, borderRadius:'50%', background:'#22c55e', border:'none', fontSize:24, cursor:'pointer' }}>🟢</button>
@@ -1428,12 +1429,23 @@ console.log("FINAL:", `${API}${endpoint}`);
       {/* Active call / calling screen */}
       {(callState === 'active' || callState === 'calling') && (
         <div key={callWith} className="anim-fadeIn" style={{ position:'fixed', inset:0, zIndex:9997, background:'#111', display:'flex', flexDirection:'column' }}>
-          <video ref={remoteVideoRef} autoPlay playsInline style={{ flex:1, width:'100%', objectFit:'cover', background:'#111' }} />
-          <video ref={localVideoRef} autoPlay playsInline muted style={{ position:'absolute', bottom:100, right:16, width:100, height:140, borderRadius:12, objectFit:'cover', border:'2px solid #fff', background:'#222' }} />
-          <div style={{ position:'absolute', top:40, left:0, right:0, textAlign:'center' }}>
-            <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>{callWith}</div>
-            <div style={{ color:'rgba(255,255,255,0.6)', fontSize:13 }}>{callState === 'calling' ? 'Calling...' : 'Connected'}</div>
-          </div>
+          <video ref={remoteVideoRef} autoPlay playsInline style={{ flex:1, width:'100%', objectFit:'cover', background:'#111', display: callType === 'video' ? 'block' : 'none' }} />
+          {callType === 'audio' && (
+            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#1a1a2e' }}>
+              <div style={{ width:100, height:100, borderRadius:'50%', background:'linear-gradient(135deg,#b76e79,#a05a64)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:40, marginBottom:16 }}>
+                {callWith?.[0]?.toUpperCase()}
+              </div>
+              <div style={{ color:'#fff', fontSize:20, fontWeight:700 }}>{callWith}</div>
+              <div style={{ color:'#a88070', fontSize:13, marginTop:8 }}>{callState === 'calling' ? 'Calling...' : '🎵 Audio call connected'}</div>
+            </div>
+          )}
+          {callType === 'video' && <video ref={localVideoRef} autoPlay playsInline muted style={{ position:'absolute', bottom:100, right:16, width:100, height:140, borderRadius:12, objectFit:'cover', border:'2px solid #fff', background:'#222' }} />}
+          {callType === 'video' && (
+            <div style={{ position:'absolute', top:40, left:0, right:0, textAlign:'center' }}>
+              <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>{callWith}</div>
+              <div style={{ color:'rgba(255,255,255,0.6)', fontSize:13 }}>{callState === 'calling' ? 'Calling...' : 'Connected'}</div>
+            </div>
+          )}
           <div style={{ position:'absolute', bottom:32, left:0, right:0, display:'flex', justifyContent:'center', gap:20 }}>
             <button onClick={() => endCall()} style={{ width:64, height:64, borderRadius:'50%', background:'#e94560', border:'none', fontSize:28, cursor:'pointer', boxShadow:'0 4px 20px rgba(233,69,96,0.5)' }}>🔴</button>
           </div>
