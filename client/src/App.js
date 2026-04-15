@@ -254,7 +254,15 @@ export default function App() {
     });
 
     socket.on('userOnline', (username) => setOnlineFriends(prev => [...new Set([...prev, username])]));
-    socket.on('userOffline', (username) => setOnlineFriends(prev => prev.filter(u => u !== username)));
+    socket.on('usernameChanged', ({ oldUsername, newUsername }) => {
+      setFriends(prev => prev.map(f => f === oldUsername ? newUsername : f));
+      setFriendDetails(prev => { const d = { ...prev }; if (d[oldUsername]) { d[newUsername] = { ...d[oldUsername], username: newUsername }; delete d[oldUsername]; } return d; });
+      setActiveContact(prev => prev === oldUsername ? newUsername : prev);
+      setChats(prev => { const c = { ...prev }; if (c[oldUsername]) { c[newUsername] = c[oldUsername]; delete c[oldUsername]; } return c; });
+    });
+    socket.on('profilePicChanged', ({ username, profilePic }) => {
+      setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], profilePic } }));
+    });    socket.on('userOffline', (username) => setOnlineFriends(prev => prev.filter(u => u !== username)));
     socket.on('onlineFriendsList', (list) => setOnlineFriends(list));
 
     socket.on('messagesSeen', ({ by, at }) => {

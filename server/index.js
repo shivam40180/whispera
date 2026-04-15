@@ -122,6 +122,8 @@ app.post('/register', [
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
   try {
+    const badWords = ['sex','porn','nude','naked','fuck','shit','ass','dick','pussy','cock','boob','nigger','nigga','bitch','slut','whore','rape','xxx','18+','adult','nsfw'];
+    if (badWords.some(w => req.body.username.toLowerCase().includes(w))) return res.status(400).json({ error: 'Username contains inappropriate content' });
     const existing = await User.findOne({ $or: [{ email: req.body.email }, { username: req.body.username }] });
     if (existing) return res.status(409).json({ error: 'Email or username already taken' });
     const hash = await bcrypt.hash(req.body.password, 10);
@@ -154,7 +156,15 @@ app.put('/settings', auth, async (req, res) => {
     if (username && username !== user.username) {
       const exists = await User.findOne({ username });
       if (exists) return res.status(409).json({ error: 'Username already taken' });
+      const badWords = ['sex','porn','nude','naked','fuck','shit','ass','dick','pussy','cock','boob','nigger','nigga','bitch','slut','whore','rape','xxx','18+','adult','nsfw'];
+      if (badWords.some(w => username.toLowerCase().includes(w))) return res.status(400).json({ error: 'Username contains inappropriate content' });
+      const oldUsername = user.username;
       user.username = username;
+      await User.updateMany({ friends: oldUsername }, { $set: { 'friends.$[el]': username } }, { arrayFilters: [{ 'el': oldUsername }] });
+      await User.updateMany({ requests: oldUsername }, { $set: { 'requests.$[el]': username } }, { arrayFilters: [{ 'el': oldUsername }] });
+      await Message.updateMany({ sender: oldUsername }, { sender: username });
+      await Message.updateMany({ receiver: oldUsername }, { receiver: username });
+      user.friends.forEach(f => io.to(f).emit('usernameChanged', { oldUsername, newUsername: username }));
     }
     if (password) user.password = await bcrypt.hash(password, 10);
     if (typeof showLastSeen === 'boolean') user.privacy.showLastSeen = showLastSeen;
@@ -168,6 +178,8 @@ app.post('/settings/profile-pic', auth, uploadProfile.single('photo'), async (re
   try {
     const url = `${BASE}/uploads/profiles/${req.file.filename}`;
     await User.findByIdAndUpdate(req.user.id, { profilePic: url });
+    const user = await User.findById(req.user.id).select('friends');
+    user.friends.forEach(f => io.to(f).emit('profilePicChanged', { username: req.user.username, profilePic: url }));
     res.json({ profilePic: url });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
