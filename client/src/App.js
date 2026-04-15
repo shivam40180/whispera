@@ -120,6 +120,7 @@ export default function App() {
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
   const [notification, setNotification] = useState('');
+  const [msgNotif, setMsgNotif] = useState(null);
   const [onlineFriends, setOnlineFriends] = useState([]);
   const [unread, setUnread] = useState({});
   const [showSettings, setShowSettings] = useState(false);
@@ -214,6 +215,8 @@ export default function App() {
       if (data.sender !== me) {
         if (activeContactRef.current !== data.sender) {
           setUnread(prev => ({ ...prev, [data.sender]: (prev[data.sender] || 0) + 1 }));
+          setMsgNotif({ sender: data.sender, text: data.text || '📎 Sent a file', pic: data.profilePic });
+          setTimeout(() => setMsgNotif(null), 4000);
         }
         if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
           new Notification(`💬 ${data.sender}`, { body: data.text || '📎 Sent a file', icon: '/favicon.ico' });
@@ -1200,6 +1203,21 @@ console.log("FINAL:", `${API}${endpoint}`);
           </>
         )}
       </div>
+
+      {/* In-app message notification toast */}
+      {msgNotif && (
+        <div onClick={() => { setActiveContact(msgNotif.sender); setMsgNotif(null); }}
+          style={{ position:'fixed', bottom:24, left:24, zIndex:9999, display:'flex', alignItems:'center', gap:10, background:'#2d1f1a', border:'1px solid #b76e79', borderRadius:16, padding:'12px 16px', boxShadow:'0 8px 32px rgba(0,0,0,0.5)', cursor:'pointer', maxWidth:300, animation:'slideInLeft 0.3s ease' }}>
+          <div style={{ width:38, height:38, borderRadius:'50%', background:'linear-gradient(135deg,#b76e79,#a05a64)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:'#fff', flexShrink:0 }}>
+            {msgNotif.sender[0].toUpperCase()}
+          </div>
+          <div style={{ flex:1, overflow:'hidden' }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#f0e6de' }}>{msgNotif.sender}</div>
+            <div style={{ fontSize:12, color:'#a88070', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{msgNotif.text}</div>
+          </div>
+          <button onClick={e => { e.stopPropagation(); setMsgNotif(null); }} style={{ background:'none', border:'none', color:'#a88070', fontSize:16, cursor:'pointer', flexShrink:0 }}>✕</button>
+        </div>
+      )}
     </div>
   );
 }
