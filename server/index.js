@@ -102,7 +102,7 @@ io.on('connection', (socket) => {
   });
 
   // WebRTC signaling
-  socket.on('call:offer',  ({ to, from, offer })   => io.to(to).emit('call:offer',  { from, offer }));
+  socket.on('call:offer',  ({ to, from, offer, type }) => io.to(to).emit('call:offer',  { from, offer, type }));
   socket.on('call:answer', ({ to, answer })         => io.to(to).emit('call:answer', { answer }));
   socket.on('call:ice',    ({ to, candidate })      => io.to(to).emit('call:ice',    { candidate }));
   socket.on('call:reject', ({ to })                 => io.to(to).emit('call:rejected'));

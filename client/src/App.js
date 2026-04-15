@@ -108,14 +108,19 @@ export default function App() {
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [msgSearch, setMsgSearch] = useState('');
   const [showMsgSearch, setShowMsgSearch] = useState(false);
-  const [callState, setCallState] = useState(null); // null | 'calling' | 'incoming' | 'active'
+  const [callState, setCallState] = useState(null);
   const [callWith, setCallWith] = useState(null);
-  const [callType, setCallType] = useState('video'); // 'video' | 'audio'
+  const [callType, setCallType] = useState('video');
   const [incomingCall, setIncomingCall] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
+  const callWithRef = useRef(null);
+  const incomingCallRef = useRef(null);
+
+  useEffect(() => { callWithRef.current = callWith; }, [callWith]);
+  useEffect(() => { incomingCallRef.current = incomingCall; }, [incomingCall]);
 
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -322,6 +327,7 @@ export default function App() {
     // WebRTC call events
     socket.on('call:offer', ({ from, offer, type }) => {
       setIncomingCall({ from, offer });
+      incomingCallRef.current = { from, offer };
       setCallType(type || 'video');
       setCallState('incoming');
     });
@@ -639,6 +645,7 @@ console.log("FINAL:", `${API}${endpoint}`);
     if (callState) return;
     setCallType(type);
     setCallWith(activeContact);
+    callWithRef.current = activeContact;
     setCallState('calling');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
@@ -658,8 +665,10 @@ console.log("FINAL:", `${API}${endpoint}`);
     const caller = incomingCall.from;
     const savedOffer = incomingCall.offer;
     setCallWith(caller);
+    callWithRef.current = caller;
     setCallState('active');
     setIncomingCall(null);
+    incomingCallRef.current = null;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: callType === 'video', audio: true });
       localStreamRef.current = stream;
@@ -679,17 +688,19 @@ console.log("FINAL:", `${API}${endpoint}`);
     if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; }
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    callWithRef.current = null;
+    incomingCallRef.current = null;
     setCallState(null); setCallWith(null); setIncomingCall(null);
   };
 
   const endCall = () => {
-    const to = callWith;
+    const to = callWithRef.current;
     cleanupCall();
     if (to) socket.emit('call:end', { to });
   };
 
   const rejectCall = () => {
-    const to = incomingCall?.from;
+    const to = incomingCallRef.current?.from;
     cleanupCall();
     if (to) socket.emit('call:reject', { to });
   };
