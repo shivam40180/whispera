@@ -130,6 +130,7 @@ export default function App() {
   const [showEmojiFor, setShowEmojiFor] = useState(null);
   const [showContactMenu, setShowContactMenu] = useState(false);
   const [showUserInfo, setShowUserInfo] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   const [msgContextMenu, setMsgContextMenu] = useState(null);
   const [blockedList, setBlockedList] = useState([]);
   const [showStatus, setShowStatus] = useState(false);
@@ -1007,7 +1008,7 @@ console.log("FINAL:", `${API}${endpoint}`);
               {isMobile && (
                 <button onClick={() => setActiveContact(null)} style={{ background:'none', border:'none', color:'#d4b8a8', fontSize:22, cursor:'pointer', padding:'0 4px', flexShrink:0 }}>←</button>
               )}
-              <div style={{ position:'relative', flexShrink:0, cursor:'pointer' }} onClick={() => setShowUserInfo(true)}>
+              <div style={{ position:'relative', flexShrink:0, cursor:'pointer' }} onClick={() => setShowAvatarPreview(true)}>
                 <Avatar name={activeContact} src={friendDetails[activeContact]?.profilePic} size={40} />
                 {onlineFriends.includes(activeContact) && (
                   <span style={{ position:'absolute', bottom:1, right:1, width:10, height:10, borderRadius:'50%', background:'#6aab8e', border:'2px solid #fdf8f5' }} />
@@ -1053,7 +1054,7 @@ console.log("FINAL:", `${API}${endpoint}`);
                   </div>
                   {/* Avatar */}
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'28px 20px 20px', borderBottom:'1px solid #f0e6de' }}>
-                    <div style={{ position:'relative', marginBottom:12 }}>
+                    <div style={{ position:'relative', marginBottom:12, cursor:'pointer' }} onClick={() => setShowAvatarPreview(true)}>
                       <Avatar name={activeContact} src={friendDetails[activeContact]?.profilePic} size={80} />
                       {onlineFriends.includes(activeContact) && (
                         <span style={{ position:'absolute', bottom:3, right:3, width:14, height:14, borderRadius:'50%', background:'#6aab8e', border:'3px solid #fdf8f5' }} />
@@ -1296,6 +1297,19 @@ console.log("FINAL:", `${API}${endpoint}`);
           </>
         )}
       </div>
+
+      {/* Avatar preview */}
+      {showAvatarPreview && activeContact && (
+        <div className="anim-fadeIn" onClick={() => setShowAvatarPreview(false)}
+          style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(0,0,0,0.92)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-out' }}>
+          <button onClick={() => setShowAvatarPreview(false)} style={{ position:'absolute', top:20, right:20, background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', borderRadius:'50%', width:40, height:40, fontSize:20, cursor:'pointer' }}>✕</button>
+          {friendDetails[activeContact]?.profilePic
+            ? <img src={friendDetails[activeContact].profilePic} alt={activeContact} onError={e => e.target.style.display='none'} style={{ maxWidth:'90vw', maxHeight:'90vh', borderRadius:16, objectFit:'contain', boxShadow:'0 8px 40px rgba(0,0,0,0.6)' }} />
+            : <div style={{ width:180, height:180, borderRadius:'50%', background:'linear-gradient(135deg,#b76e79,#a05a64)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:72, fontWeight:800, color:'#fff' }}>{activeContact[0].toUpperCase()}</div>
+          }
+          <div style={{ position:'absolute', bottom:30, color:'rgba(255,255,255,0.7)', fontSize:16, fontWeight:600 }}>{activeContact}</div>
+        </div>
+      )}
 
       {/* In-app message notification toast */}
       {msgNotif && (
