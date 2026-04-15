@@ -552,8 +552,6 @@ console.log("FINAL:", `${API}${endpoint}`);
 
   const handleLogout = () => {
     socket.emit('logout', currentUser?.username);
-    socket.disconnect();
-    socket.connect();
     localStorage.removeItem('chat_token');
     localStorage.removeItem('chat_user');
     localStorage.removeItem('chat_tab');
