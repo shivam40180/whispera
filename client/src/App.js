@@ -653,9 +653,9 @@ console.log("FINAL:", `${API}${endpoint}`);
     if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
     if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; }
     if (to) socket.emit('call:end', { to });
-    setCallState(null); setCallWith(null); setIncomingCall(null);
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    setCallState(null); setCallWith(null); setIncomingCall(null);
   };
 
   const rejectCall = () => {
@@ -1427,19 +1427,15 @@ console.log("FINAL:", `${API}${endpoint}`);
 
       {/* Active call / calling screen */}
       {(callState === 'active' || callState === 'calling') && (
-        <div className="anim-fadeIn" style={{ position:'fixed', inset:0, zIndex:9997, background:'#000', display:'flex', flexDirection:'column' }}>
-          {/* Remote video */}
+        <div key={callWith} className="anim-fadeIn" style={{ position:'fixed', inset:0, zIndex:9997, background:'#111', display:'flex', flexDirection:'column' }}>
           <video ref={remoteVideoRef} autoPlay playsInline style={{ flex:1, width:'100%', objectFit:'cover', background:'#111' }} />
-          {/* Local video pip */}
           <video ref={localVideoRef} autoPlay playsInline muted style={{ position:'absolute', bottom:100, right:16, width:100, height:140, borderRadius:12, objectFit:'cover', border:'2px solid #fff', background:'#222' }} />
-          {/* Status */}
           <div style={{ position:'absolute', top:40, left:0, right:0, textAlign:'center' }}>
             <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>{callWith}</div>
             <div style={{ color:'rgba(255,255,255,0.6)', fontSize:13 }}>{callState === 'calling' ? 'Calling...' : 'Connected'}</div>
           </div>
-          {/* End call button */}
-          <div style={{ position:'absolute', bottom:32, left:0, right:0, display:'flex', justifyContent:'center' }}>
-            <button onClick={endCall} style={{ width:64, height:64, borderRadius:'50%', background:'#e94560', border:'none', fontSize:28, cursor:'pointer', boxShadow:'0 4px 20px rgba(233,69,96,0.5)' }}>🔴</button>
+          <div style={{ position:'absolute', bottom:32, left:0, right:0, display:'flex', justifyContent:'center', gap:20 }}>
+            <button onClick={() => endCall()} style={{ width:64, height:64, borderRadius:'50%', background:'#e94560', border:'none', fontSize:28, cursor:'pointer', boxShadow:'0 4px 20px rgba(233,69,96,0.5)' }}>🔴</button>
           </div>
         </div>
       )}
