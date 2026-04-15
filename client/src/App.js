@@ -23,7 +23,7 @@ function avatarColor(name) {
 }
 
 function Avatar({ name, src, size = 38, style = {} }) {
-  const [imgErr, setImgErr] = React.useState(false);
+  const [imgErr, setImgErr] = useState(false);
   if (src && src.length > 0 && !imgErr) {
     return (
       <img
