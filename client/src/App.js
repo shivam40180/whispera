@@ -116,6 +116,7 @@ export default function App() {
   const remoteVideoRef = useRef(null);
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
   const callWithRef = useRef(null);
   const incomingCallRef = useRef(null);
 
@@ -625,15 +626,8 @@ console.log("FINAL:", `${API}${endpoint}`);
       if (e.candidate) socket.emit('call:ice', { to: targetUser, candidate: e.candidate });
     };
     pc.ontrack = e => {
-      const stream = e.streams[0];
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = stream;
-      } else {
-        // retry after mount
-        setTimeout(() => {
-          if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
-        }, 500);
-      }
+      remoteStreamRef.current = e.streams[0];
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
     };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') setCallState('active');
@@ -688,6 +682,7 @@ console.log("FINAL:", `${API}${endpoint}`);
     if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; }
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    remoteStreamRef.current = null;
     callWithRef.current = null;
     incomingCallRef.current = null;
     setCallState(null); setCallWith(null); setIncomingCall(null);
@@ -709,6 +704,8 @@ console.log("FINAL:", `${API}${endpoint}`);
     if (callState === 'active' || callState === 'calling') {
       if (localVideoRef.current && localStreamRef.current)
         localVideoRef.current.srcObject = localStreamRef.current;
+      if (remoteVideoRef.current && remoteStreamRef.current)
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
     }
   }, [callState]);
 
