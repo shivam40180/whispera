@@ -199,10 +199,11 @@ export default function App() {
     }
   }, []);
 
-  // Scroll to bottom on new messages
+  // Update browser tab title with unread count
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chats, activeContact]);
+    const total = Object.values(unread).reduce((a, b) => a + b, 0);
+    document.title = total > 0 ? `(${total}) Whispera` : 'Whispera';
+  }, [unread]);
 
   // All socket listeners
   useEffect(() => {
