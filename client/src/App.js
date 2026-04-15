@@ -326,8 +326,10 @@ export default function App() {
       setCallState('incoming');
     });
     socket.on('call:answer', async ({ answer }) => {
-      if (pcRef.current) await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-      setCallState('active');
+      if (pcRef.current) {
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        setCallState('active');
+      }
     });
     socket.on('call:ice', async ({ candidate }) => {
       if (pcRef.current && candidate) await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
@@ -607,9 +609,29 @@ console.log("FINAL:", `${API}${endpoint}`);
   };
 
   const createPC = (targetUser) => {
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] });
-    pc.onicecandidate = e => { if (e.candidate) socket.emit('call:ice', { to: targetUser, candidate: e.candidate }); };
-    pc.ontrack = e => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+      ]
+    });
+    pc.onicecandidate = e => {
+      if (e.candidate) socket.emit('call:ice', { to: targetUser, candidate: e.candidate });
+    };
+    pc.ontrack = e => {
+      const stream = e.streams[0];
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+      } else {
+        // retry after mount
+        setTimeout(() => {
+          if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+        }, 500);
+      }
+    };
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'connected') setCallState('active');
+    };
     return pc;
   };
 
@@ -621,32 +643,34 @@ console.log("FINAL:", `${API}${endpoint}`);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      setTimeout(() => { if (localVideoRef.current) localVideoRef.current.srcObject = stream; }, 100);
       const pc = createPC(activeContact);
       pcRef.current = pc;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       socket.emit('call:offer', { to: activeContact, from: currentUser.username, offer, type });
-    } catch { cleanupCall(); alert('Could not access camera/microphone.'); }
+    } catch (err) { cleanupCall(); alert('Could not access camera/microphone.'); }
   };
 
   const answerCall = async () => {
     if (!incomingCall) return;
-    setCallWith(incomingCall.from);
+    const caller = incomingCall.from;
+    const savedOffer = incomingCall.offer;
+    setCallWith(caller);
     setCallState('active');
+    setIncomingCall(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: callType === 'video', audio: true });
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      const pc = createPC(incomingCall.from);
+      setTimeout(() => { if (localVideoRef.current) localVideoRef.current.srcObject = stream; }, 100);
+      const pc = createPC(caller);
       pcRef.current = pc;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
-      await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+      await pc.setRemoteDescription(new RTCSessionDescription(savedOffer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      socket.emit('call:answer', { to: incomingCall.from, answer });
-      setIncomingCall(null);
+      socket.emit('call:answer', { to: caller, answer });
     } catch { cleanupCall(); }
   };
 
@@ -669,6 +693,13 @@ console.log("FINAL:", `${API}${endpoint}`);
     cleanupCall();
     if (to) socket.emit('call:reject', { to });
   };
+
+  useEffect(() => {
+    if (callState === 'active' || callState === 'calling') {
+      if (localVideoRef.current && localStreamRef.current)
+        localVideoRef.current.srcObject = localStreamRef.current;
+    }
+  }, [callState]);
 
   const handleLogout = () => {
     socket.emit('logout', currentUser?.username);
