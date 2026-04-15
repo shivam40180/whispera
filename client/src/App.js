@@ -117,6 +117,7 @@ export default function App() {
   const [tab, setTab] = useState('chats');
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
   const [notification, setNotification] = useState('');
   const [onlineFriends, setOnlineFriends] = useState([]);
@@ -367,6 +368,12 @@ console.log("FINAL:", `${API}${endpoint}`);
     const res = await authFetch(`/users/search?q=${encodeURIComponent(q)}`);
     const data = await res.json();
     setSearchResults(Array.isArray(data) ? data : []);
+  };
+
+  const loadSuggested = async () => {
+    const res = await authFetch('/users/suggested');
+    const data = await res.json();
+    setSuggestedUsers(Array.isArray(data) ? data : []);
   };
 
   const sendRequest = async (username) => {
@@ -735,12 +742,14 @@ console.log("FINAL:", `${API}${endpoint}`);
             </div>
             <div style={{ overflowY:'auto', flex:1 }}>
               {searchQ && searchResults.length===0 && <div style={{ padding:'30px 16px', textAlign:'center', color:'#7a5c52', fontSize:13 }}>No users found</div>}
-              {searchResults.map(u => (
+              {(searchQ ? searchResults : suggestedUsers).map(u => (
                 <div key={u._id} className="sidebar-item" style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer' }}>
                   <Avatar name={u.username} src={u.profilePic} />
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:500, color:'#7a5c52' }}>{u.username}</div>
-                    <div style={{ fontSize:11, color:'#a88070', marginTop:2 }}>{friends.includes(u.username) ? '✅ Friends' : 'Send a request'}</div>
+                    <div style={{ fontSize:11, color:'#a88070', marginTop:2 }}>
+                      {friends.includes(u.username) ? '✅ Friends' : u.mutuals > 0 ? `👥 ${u.mutuals} mutual` : 'Add friend'}
+                    </div>
                   </div>
                   {!friends.includes(u.username) && (
                     <button
@@ -751,7 +760,7 @@ console.log("FINAL:", `${API}${endpoint}`);
                   )}
                 </div>
               ))}
-              {!searchQ && <div style={{ padding:'30px 16px', textAlign:'center', color:'#7a5c52', fontSize:13 }}>Type a username to search</div>}
+              {!searchQ && suggestedUsers.length === 0 && <div style={{ padding:'30px 16px', textAlign:'center', color:'#7a5c52', fontSize:13 }}>No users found</div>}
             </div>
           </div>
         </div>
@@ -768,7 +777,7 @@ console.log("FINAL:", `${API}${endpoint}`);
               <span className="grad-text" style={{ fontSize:20, fontWeight:800, letterSpacing:0.5 }}>Whispera</span>
             </div>
             <div style={{ display:'flex', gap:4 }}>
-              <button onClick={() => setTab('search')} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', padding:'6px', borderRadius:8, color:'#a88070', transition:'color 0.2s' }} title="Search">🔍</button>
+              <button onClick={() => { setTab('search'); loadSuggested(); }} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', padding:'6px', borderRadius:8, color:'#a88070', transition:'color 0.2s' }} title="Search">🔍</button>
               <button onClick={() => setShowSettings(true)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', padding:'6px', borderRadius:8, color:'#a88070', transition:'color 0.2s' }} title="Settings">⚙️</button>
             </div>
           </div>

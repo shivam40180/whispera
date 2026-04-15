@@ -177,10 +177,20 @@ app.get('/users/search', auth, async (req, res) => {
   const q = req.query.q?.trim();
   if (!q) return res.json([]);
   try {
+    const me = await User.findById(req.user.id).select('friends');
     const users = await User.find({ username: { $regex: q, $options: 'i' }, _id: { $ne: req.user.id } })
-      .select('username profilePic lastSeen privacy').limit(10);
-    res.json(users);
+      .select('username profilePic friends').limit(10);
+    res.json(users.map(u => ({ _id: u._id, username: u.username, profilePic: u.profilePic, mutuals: u.friends.filter(f => me.friends.includes(f)).length })));
   } catch { res.status(500).json({ error: 'Search failed' }); }
+});
+
+app.get('/users/suggested', auth, async (req, res) => {
+  try {
+    const me = await User.findById(req.user.id).select('friends blocked');
+    const users = await User.find({ _id: { $ne: req.user.id }, username: { $nin: [...me.blocked] } })
+      .select('username profilePic friends').limit(15);
+    res.json(users.map(u => ({ _id: u._id, username: u.username, profilePic: u.profilePic, mutuals: u.friends.filter(f => me.friends.includes(f)).length })));
+  } catch { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/friends', auth, async (req, res) => {
