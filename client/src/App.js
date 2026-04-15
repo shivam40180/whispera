@@ -129,6 +129,7 @@ export default function App() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [showEmojiFor, setShowEmojiFor] = useState(null);
   const [showContactMenu, setShowContactMenu] = useState(false);
+  const [showUserInfo, setShowUserInfo] = useState(false);
   const [msgContextMenu, setMsgContextMenu] = useState(null);
   const [blockedList, setBlockedList] = useState([]);
   const [showStatus, setShowStatus] = useState(false);
@@ -1006,13 +1007,13 @@ console.log("FINAL:", `${API}${endpoint}`);
               {isMobile && (
                 <button onClick={() => setActiveContact(null)} style={{ background:'none', border:'none', color:'#d4b8a8', fontSize:22, cursor:'pointer', padding:'0 4px', flexShrink:0 }}>←</button>
               )}
-              <div style={{ position:'relative', flexShrink:0 }}>
+              <div style={{ position:'relative', flexShrink:0, cursor:'pointer' }} onClick={() => setShowUserInfo(true)}>
                 <Avatar name={activeContact} src={friendDetails[activeContact]?.profilePic} size={40} />
                 {onlineFriends.includes(activeContact) && (
                   <span style={{ position:'absolute', bottom:1, right:1, width:10, height:10, borderRadius:'50%', background:'#6aab8e', border:'2px solid #fdf8f5' }} />
                 )}
               </div>
-              <div style={{ flex:1 }}>
+              <div style={{ flex:1, cursor:'pointer' }} onClick={() => setShowUserInfo(true)}>
                 <div style={{ fontWeight:700, fontSize: isMobile ? 14 : 15, color:'#2d1f1a' }}>{activeContact}</div>
                 <div style={{ fontSize:12 }}>
                   {typingUsers[activeContact]
@@ -1039,6 +1040,55 @@ console.log("FINAL:", `${API}${endpoint}`);
                 )}
               </div>
             </div>
+
+            {/* User info panel */}
+            {showUserInfo && activeContact && (
+              <div className="anim-fadeIn" style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(0,0,0,0.5)' }} onClick={() => setShowUserInfo(false)}>
+                <div className="anim-slideLeft" onClick={e => e.stopPropagation()}
+                  style={{ position:'absolute', top:0, right:0, width: isMobile ? '85vw' : 320, height:'100%', background:'#fdf8f5', boxShadow:'-8px 0 32px rgba(0,0,0,0.3)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                  {/* Header */}
+                  <div style={{ padding:'16px 20px', background:'linear-gradient(135deg,#b76e79,#a05a64)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <span style={{ color:'#fff', fontWeight:700, fontSize:15 }}>User Info</span>
+                    <button onClick={() => setShowUserInfo(false)} style={{ background:'rgba(255,255,255,0.2)', border:'none', color:'#fff', borderRadius:'50%', width:30, height:30, cursor:'pointer', fontSize:16 }}>✕</button>
+                  </div>
+                  {/* Avatar */}
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'28px 20px 20px', borderBottom:'1px solid #f0e6de' }}>
+                    <div style={{ position:'relative', marginBottom:12 }}>
+                      <Avatar name={activeContact} src={friendDetails[activeContact]?.profilePic} size={80} />
+                      {onlineFriends.includes(activeContact) && (
+                        <span style={{ position:'absolute', bottom:3, right:3, width:14, height:14, borderRadius:'50%', background:'#6aab8e', border:'3px solid #fdf8f5' }} />
+                      )}
+                    </div>
+                    <div style={{ fontSize:18, fontWeight:800, color:'#2d1f1a' }}>{activeContact}</div>
+                    <div style={{ fontSize:12, marginTop:4, color: onlineFriends.includes(activeContact) ? '#6aab8e' : '#a88070', fontWeight:600 }}>
+                      {onlineFriends.includes(activeContact) ? '🟢 Online' : `⚫ ${lastSeenStr(activeContact)}`}
+                    </div>
+                  </div>
+                  {/* Info rows */}
+                  <div style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:12 }}>
+                    <div style={{ background:'#f7f0eb', borderRadius:10, padding:'12px 14px' }}>
+                      <div style={{ fontSize:11, color:'#a88070', fontWeight:600, marginBottom:4 }}>USERNAME</div>
+                      <div style={{ fontSize:14, color:'#2d1f1a', fontWeight:600 }}>@{activeContact}</div>
+                    </div>
+                    <div style={{ background:'#f7f0eb', borderRadius:10, padding:'12px 14px' }}>
+                      <div style={{ fontSize:11, color:'#a88070', fontWeight:600, marginBottom:4 }}>STATUS</div>
+                      <div style={{ fontSize:14, color:'#2d1f1a' }}>{onlineFriends.includes(activeContact) ? 'Active now' : lastSeenStr(activeContact)}</div>
+                    </div>
+                    <div style={{ background:'#f7f0eb', borderRadius:10, padding:'12px 14px' }}>
+                      <div style={{ fontSize:11, color:'#a88070', fontWeight:600, marginBottom:4 }}>FRIENDS SINCE</div>
+                      <div style={{ fontSize:14, color:'#2d1f1a' }}>In your contacts ✅</div>
+                    </div>
+                  </div>
+                  {/* Actions */}
+                  <div style={{ padding:'0 20px', display:'flex', flexDirection:'column', gap:8, marginTop:'auto', paddingBottom:24 }}>
+                    <button onClick={() => { unfriend(activeContact); setShowUserInfo(false); }}
+                      style={{ padding:'11px', borderRadius:10, background:'rgba(196,104,90,0.1)', border:'1px solid rgba(196,104,90,0.3)', color:'#c4685a', fontSize:13, fontWeight:600, cursor:'pointer' }}>👤 Unfriend</button>
+                    <button onClick={() => { blockUser(activeContact); setShowUserInfo(false); }}
+                      style={{ padding:'11px', borderRadius:10, background:'rgba(201,150,58,0.1)', border:'1px solid rgba(201,150,58,0.3)', color:'#c9963a', fontSize:13, fontWeight:600, cursor:'pointer' }}>🚫 Block</button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Message search bar */}
             {showMsgSearch && (
