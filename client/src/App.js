@@ -182,6 +182,7 @@ export default function App() {
           setFriendDetails(details);
           const savedTab = localStorage.getItem('chat_tab');
           if (savedTab) setTab(savedTab);
+          loadStatuses(savedToken);
           setScreen('chat');
         })
         .catch(() => {
