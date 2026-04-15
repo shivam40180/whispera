@@ -23,12 +23,14 @@ function avatarColor(name) {
 }
 
 function Avatar({ name, src, size = 38, style = {} }) {
-  if (src && src.length > 0) {
+  const [imgErr, setImgErr] = React.useState(false);
+  if (src && src.length > 0 && !imgErr) {
     return (
       <img
         src={src}
         alt="pfp"
         className="avatar-wrap"
+        onError={() => setImgErr(true)}
         style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, ...style }}
       />
     );
