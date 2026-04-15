@@ -9,24 +9,13 @@ const { body, validationResult } = require('express-validator');
 const { Server } = require('socket.io');
 const multer = require('multer');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const memStorage = multer.memoryStorage();
+const uploadChat    = multer({ storage: memStorage, limits: { fileSize: 50*1024*1024 } });
+const uploadProfile = multer({ storage: memStorage, limits: { fileSize: 5*1024*1024  } });
+const uploadStatus  = multer({ storage: memStorage, limits: { fileSize: 50*1024*1024 } });
 
-const makeStorage = (folder) => new CloudinaryStorage({
-  cloudinary,
-  params: (req, file) => ({
-    folder: `whispera/${folder}`,
-    resource_type: 'auto',
-    public_id: require('uuid').v4(),
-  }),
-});
+const getFileUrl = (req) => `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
 const User = require('./models/User');
 const Message = require('./models/Message');
@@ -50,9 +39,9 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 const onlineUsers = {};
 
-const uploadChat    = multer({ storage: makeStorage('chat'),    limits: { fileSize: 50*1024*1024 } });
-const uploadProfile = multer({ storage: makeStorage('profiles'), limits: { fileSize: 5*1024*1024  } });
-const uploadStatus  = multer({ storage: makeStorage('status'),   limits: { fileSize: 50*1024*1024 } });
+const uploadChat    = multer({ storage: memStorage, limits: { fileSize: 50*1024*1024 } });
+const uploadProfile = multer({ storage: memStorage, limits: { fileSize: 5*1024*1024  } });
+const uploadStatus  = multer({ storage: memStorage, limits: { fileSize: 50*1024*1024 } });
 
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -241,7 +230,7 @@ app.put('/settings', auth, async (req, res) => {
 
 app.post('/settings/profile-pic', auth, uploadProfile.single('photo'), async (req, res) => {
   try {
-    const url = req.file.path;
+    const url = getFileUrl(req);
     await User.findByIdAndUpdate(req.user.id, { profilePic: url });
     const user = await User.findById(req.user.id).select('friends');
     user.friends.forEach(f => io.to(f).emit('profilePicChanged', { username: req.user.username, profilePic: url }));
@@ -430,7 +419,7 @@ app.post('/upload/chat', auth, uploadChat.single('file'), async (req, res) => {
     if (['.jpg','.jpeg','.png','.gif','.webp'].includes(ext)) fileType = 'image';
     else if (['.mp4','.mov','.avi','.webm'].includes(ext)) fileType = 'video';
     else if (['.mp3','.wav','.ogg','.m4a'].includes(ext)) fileType = 'audio';
-    const url = req.file.path;
+    const url = getFileUrl(req);
     res.json({ fileUrl: url, fileType, fileName: req.file.originalname });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -440,7 +429,7 @@ app.post('/status', auth, uploadStatus.single('file'), async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const statusData = { type: req.body.type || 'text', content: req.body.content || '' };
-    if (req.file) statusData.fileUrl = req.file.path;
+    if (req.file) statusData.fileUrl = getFileUrl(req);
     user.statuses.push(statusData);
     await user.save();
     res.json({ message: 'Status posted' });
