@@ -41,6 +41,7 @@ export default function StatusViewer({ token, currentUser, onClose }) {
   };
 
   useEffect(() => { reloadStatuses(); }, [token]);
+  useEffect(() => { if (tab === 'view') reloadStatuses(); }, [tab]);
 
   useEffect(() => {
     if (!viewing) return;
@@ -195,8 +196,8 @@ export default function StatusViewer({ token, currentUser, onClose }) {
         {/* Content */}
         <div className="anim-scaleIn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
           {st.type === 'text' && <div style={{ fontSize: 28, color: '#fff', fontWeight: 700, lineHeight: 1.5, textAlign: 'center', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>{st.content}</div>}
-          {st.type === 'image' && <img src={st.fileUrl?.replace(/^http:\/\/192\.168\.[^/]+/, 'https://whispera-api.onrender.com')} alt="status" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 12, objectFit: 'contain' }} />}
-          {st.type === 'video' && <video src={st.fileUrl?.replace(/^http:\/\/192\.168\.[^/]+/, 'https://whispera-api.onrender.com')} controls autoPlay style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 12 }} />}
+          {st.type === 'image' && <img src={st.fileUrl} alt="status" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 12, objectFit: 'contain' }} />}
+          {st.type === 'video' && <video src={st.fileUrl} controls autoPlay style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 12 }} />}
           {st.type === 'audio' && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 64, marginBottom: 20 }}>🎵</div>
