@@ -143,11 +143,59 @@ app.post('/login', [
     if (!user) return res.status(404).json({ error: 'User not found' });
     const valid = await bcrypt.compare(req.body.password, user.password);
     if (!valid) return res.status(401).json({ error: 'Wrong password' });
+    if (user.isDeactivated) return res.status(403).json({ error: 'deactivated', warning: user.deactivateWarning || 'Your account has been deactivated by admin.' });
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, username: user.username, email: user.email, profilePic: user.profilePic, privacy: user.privacy } });
   } catch { res.status(500).json({ error: 'Login failed' }); }
 });
 
+// ── Admin ─────────────────────────────────────────────────
+const adminAuth = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try { req.admin = jwt.verify(token, process.env.ADMIN_SECRET); next(); }
+  catch { res.status(401).json({ error: 'Invalid admin token' }); }
+};
+
+app.post('/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD)
+    return res.status(401).json({ error: 'Invalid admin credentials' });
+  const token = jwt.sign({ admin: true }, process.env.ADMIN_SECRET, { expiresIn: '8h' });
+  res.json({ token });
+});
+
+app.get('/admin/users', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find({}).select('username email profilePic isDeactivated deactivateWarning createdAt lastSeen friends').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/admin/users/:id', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    await Message.deleteMany({ $or: [{ sender: user.username }, { receiver: user.username }] });
+    await User.updateMany({}, { $pull: { friends: user.username, requests: user.username, blocked: user.username } });
+    res.json({ message: 'User deleted' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/admin/users/:id/deactivate', adminAuth, async (req, res) => {
+  try {
+    const { warning } = req.body;
+    await User.findByIdAndUpdate(req.params.id, { isDeactivated: true, deactivateWarning: warning || 'Your account has been deactivated.' });
+    res.json({ message: 'Deactivated' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/admin/users/:id/reactivate', adminAuth, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.params.id, { isDeactivated: false, deactivateWarning: '' });
+    res.json({ message: 'Reactivated' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 // ── Settings ──────────────────────────────────────────────
 app.put('/settings', auth, async (req, res) => {
   try {

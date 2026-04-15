@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Whispera Admin</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh}
+  .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .card{background:#16213e;border:1px solid #0f3460;border-radius:16px;padding:36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+  h1{font-size:22px;font-weight:800;color:#e94560;margin-bottom:6px}
+  .sub{font-size:13px;color:#888;margin-bottom:24px}
+  input{width:100%;padding:11px 14px;background:#0f3460;border:1px solid #1a4a8a;border-radius:10px;color:#fff;font-size:14px;outline:none;margin-bottom:12px}
+  input:focus{border-color:#e94560}
+  .btn{width:100%;padding:12px;background:linear-gradient(135deg,#e94560,#c73652);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+  .btn:hover{opacity:0.9}
+  .err{color:#e94560;font-size:13px;margin-bottom:10px;padding:8px 12px;background:rgba(233,69,96,0.1);border-radius:8px}
+  /* Dashboard */
+  #dashboard{display:none}
+  .topbar{background:#16213e;border-bottom:1px solid #0f3460;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h2{font-size:18px;color:#e94560;font-weight:800}
+  .logout-btn{background:rgba(233,69,96,0.15);border:1px solid #e94560;color:#e94560;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+  .content{padding:24px;max-width:1100px;margin:0 auto}
+  .stats{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+  .stat-card{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:16px 24px;flex:1;min-width:140px}
+  .stat-card .num{font-size:28px;font-weight:800;color:#e94560}
+  .stat-card .label{font-size:12px;color:#888;margin-top:4px}
+  .search-bar{width:100%;padding:10px 14px;background:#16213e;border:1px solid #0f3460;border-radius:10px;color:#fff;font-size:14px;outline:none;margin-bottom:16px}
+  .search-bar:focus{border-color:#e94560}
+  table{width:100%;border-collapse:collapse;background:#16213e;border-radius:12px;overflow:hidden}
+  th{background:#0f3460;padding:12px 16px;text-align:left;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px}
+  td{padding:12px 16px;border-bottom:1px solid #0f3460;font-size:13px;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(15,52,96,0.4)}
+  .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+  .badge.active{background:rgba(34,197,94,0.15);color:#22c55e}
+  .badge.deactivated{background:rgba(233,69,96,0.15);color:#e94560}
+  .action-btn{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;margin-right:6px}
+  .deactivate-btn{background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)}
+  .reactivate-btn{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+  .delete-btn{background:rgba(233,69,96,0.15);color:#e94560;border:1px solid rgba(233,69,96,0.3)}
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000}
+  .modal{background:#16213e;border:1px solid #0f3460;border-radius:16px;padding:28px;width:100%;max-width:420px}
+  .modal h3{font-size:16px;font-weight:700;color:#e94560;margin-bottom:16px}
+  .modal textarea{width:100%;padding:11px 14px;background:#0f3460;border:1px solid #1a4a8a;border-radius:10px;color:#fff;font-size:13px;outline:none;resize:none;min-height:90px;margin-bottom:14px}
+  .modal textarea:focus{border-color:#e94560}
+  .modal-btns{display:flex;gap:10px}
+  .modal-btns button{flex:1;padding:10px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none}
+  .confirm-btn{background:linear-gradient(135deg,#e94560,#c73652);color:#fff}
+  .cancel-btn{background:#0f3460;color:#888}
+  .avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px}
+  .avatar-init{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#e94560,#c73652);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;margin-right:8px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-wrap" id="loginPage">
+  <div class="card">
+    <h1>🛡️ Admin Panel</h1>
+    <p class="sub">Whispera — Restricted Access</p>
+    <div class="err" id="loginErr" style="display:none"></div>
+    <input type="text" id="adminUser" placeholder="Admin Username" />
+    <input type="password" id="adminPass" placeholder="Password" />
+    <button class="btn" onclick="adminLogin()">Login</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <div class="topbar">
+    <h2>🛡️ Whispera Admin</h2>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+  <div class="content">
+    <div class="stats">
+      <div class="stat-card"><div class="num" id="totalUsers">0</div><div class="label">Total Users</div></div>
+      <div class="stat-card"><div class="num" id="activeUsers">0</div><div class="label">Active</div></div>
+      <div class="stat-card"><div class="num" id="deactivatedUsers">0</div><div class="label">Deactivated</div></div>
+    </div>
+    <input class="search-bar" type="text" placeholder="🔍 Search by username or email..." oninput="filterUsers(this.value)" />
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Email</th>
+          <th>Friends</th>
+          <th>Last Seen</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="usersTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Deactivate Modal -->
+<div class="modal-overlay" id="deactivateModal" style="display:none">
+  <div class="modal">
+    <h3>⚠️ Deactivate Account</h3>
+    <textarea id="warningText" placeholder="Write a warning message that will be shown to the user when they try to login..."></textarea>
+    <div class="modal-btns">
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="confirm-btn" onclick="confirmDeactivate()">Deactivate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="deleteModal" style="display:none">
+  <div class="modal">
+    <h3>🗑️ Delete User</h3>
+    <p style="color:#888;font-size:13px;margin-bottom:16px">This will permanently delete the user and all their messages. This cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="confirm-btn" onclick="confirmDelete()">Delete Permanently</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'https://whispera-api.onrender.com';
+  let adminToken = localStorage.getItem('admin_token') || '';
+  let allUsers = [];
+  let selectedUserId = null;
+
+  if (adminToken) initDashboard();
+
+  async function adminLogin() {
+    const username = document.getElementById('adminUser').value.trim();
+    const password = document.getElementById('adminPass').value.trim();
+    const err = document.getElementById('loginErr');
+    err.style.display = 'none';
+    try {
+      const res = await fetch(`${API}/admin/login`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { err.textContent = data.error; err.style.display = 'block'; return; }
+      adminToken = data.token;
+      localStorage.setItem('admin_token', adminToken);
+      initDashboard();
+    } catch { err.textContent = 'Cannot reach server'; err.style.display = 'block'; }
+  }
+
+  function initDashboard() {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadUsers();
+  }
+
+  async function loadUsers() {
+    try {
+      const res = await fetch(`${API}/admin/users`, { headers: { Authorization: `Bearer ${adminToken}` } });
+      if (res.status === 401) { logout(); return; }
+      allUsers = await res.json();
+      renderUsers(allUsers);
+    } catch { alert('Failed to load users'); }
+  }
+
+  function renderUsers(users) {
+    document.getElementById('totalUsers').textContent = users.length;
+    document.getElementById('activeUsers').textContent = users.filter(u => !u.isDeactivated).length;
+    document.getElementById('deactivatedUsers').textContent = users.filter(u => u.isDeactivated).length;
+    const tbody = document.getElementById('usersTable');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>
+          ${u.profilePic ? `<img class="avatar" src="${u.profilePic}" onerror="this.style.display='none'" />` : `<span class="avatar-init">${u.username[0].toUpperCase()}</span>`}
+          <strong>${u.username}</strong>
+        </td>
+        <td style="color:#888">${u.email}</td>
+        <td>${u.friends?.length || 0}</td>
+        <td style="color:#888;font-size:12px">${u.lastSeen ? new Date(u.lastSeen).toLocaleString() : 'Never'}</td>
+        <td><span class="badge ${u.isDeactivated ? 'deactivated' : 'active'}">${u.isDeactivated ? 'Deactivated' : 'Active'}</span></td>
+        <td>
+          ${u.isDeactivated
+            ? `<button class="action-btn reactivate-btn" onclick="reactivate('${u._id}')">✅ Reactivate</button>`
+            : `<button class="action-btn deactivate-btn" onclick="openDeactivate('${u._id}')">⚠️ Deactivate</button>`
+          }
+          <button class="action-btn delete-btn" onclick="openDelete('${u._id}')">🗑️ Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function filterUsers(q) {
+    const filtered = allUsers.filter(u =>
+      u.username.toLowerCase().includes(q.toLowerCase()) ||
+      u.email.toLowerCase().includes(q.toLowerCase())
+    );
+    renderUsers(filtered);
+  }
+
+  function openDeactivate(id) { selectedUserId = id; document.getElementById('warningText').value = ''; document.getElementById('deactivateModal').style.display = 'flex'; }
+  function openDelete(id) { selectedUserId = id; document.getElementById('deleteModal').style.display = 'flex'; }
+  function closeModal() { document.getElementById('deactivateModal').style.display = 'none'; document.getElementById('deleteModal').style.display = 'none'; selectedUserId = null; }
+
+  async function confirmDeactivate() {
+    const warning = document.getElementById('warningText').value.trim();
+    if (!warning) { alert('Please write a warning message'); return; }
+    await fetch(`${API}/admin/users/${selectedUserId}/deactivate`, {
+      method: 'PUT', headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ warning })
+    });
+    closeModal(); loadUsers();
+  }
+
+  async function reactivate(id) {
+    await fetch(`${API}/admin/users/${id}/reactivate`, { method: 'PUT', headers: { Authorization: `Bearer ${adminToken}` } });
+    loadUsers();
+  }
+
+  async function confirmDelete() {
+    await fetch(`${API}/admin/users/${selectedUserId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+    closeModal(); loadUsers();
+  }
+
+  function logout() { localStorage.removeItem('admin_token'); adminToken = ''; document.getElementById('loginPage').style.display = 'flex'; document.getElementById('dashboard').style.display = 'none'; }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') adminLogin(); });
+</script>
+</body>
+</html>

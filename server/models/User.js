@@ -20,7 +20,9 @@ const schema = new mongoose.Schema({
   privacy: {
     showLastSeen: { type: Boolean, default: true }
   },
-  statuses: [statusSchema]
+  statuses: [statusSchema],
+  isDeactivated: { type: Boolean, default: false },
+  deactivateWarning: { type: String, default: '' }
 });
 
 module.exports = mongoose.model('User', schema);

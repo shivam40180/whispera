@@ -377,7 +377,14 @@ console.log("FINAL:", `${API}${endpoint}`);
       console.log("FINAL URL:", `${API}${endpoint}`);
       const data = await res.json();
       setAuthLoading(false);
-      if (!res.ok) { setAuthError(data.error || data.errors?.[0]?.msg || 'Something went wrong'); return; }
+      if (!res.ok) {
+        if (data.error === 'deactivated') {
+          setAuthError(`🚫 Account Deactivated: ${data.warning}`);
+        } else {
+          setAuthError(data.error || data.errors?.[0]?.msg || 'Something went wrong');
+        }
+        return;
+      }
       if (screen === 'register') { setScreen('login'); setForm(f => ({ ...f, password: '' })); return; }
       setToken(data.token);
       setCurrentUser(data.user);
