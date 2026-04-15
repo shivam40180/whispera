@@ -706,7 +706,7 @@ console.log("FINAL:", `${API}${endpoint}`);
                   <span>👁️</span>
                   <span style={{ color:'#fff', fontSize:13, fontWeight:600 }}>{viewingStatus.status.views?.length || 0} views</span>
                 </div>
-                <button onClick={async () => { await fetch(`${API}/status/${viewingStatus.status._id}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}` } }); setViewingStatus(null); }}
+                <button onClick={async () => { await fetch(`${API}/status/${viewingStatus.status._id}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}` } }); setStatuses(prev => prev.map(u => u.username === viewingStatus.username ? { ...u, statuses: u.statuses.filter(s => s._id !== viewingStatus.status._id) } : u).filter(u => u.statuses.length > 0)); setViewingStatus(null); }}
                   style={{ background:'rgba(196,104,90,0.9)', border:'none', color:'#fff', fontSize:13, fontWeight:700, padding:'8px 16px', borderRadius:20, cursor:'pointer' }}>🗑️ Delete</button>
               </div>
             </div>
