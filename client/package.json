@@ -9,7 +9,8 @@
     "socket.io-client": "^4.7.0"
   },
   "scripts": {
-    "start": "react-scripts start"
+    "start": "react-scripts start",
+    "build": "GENERATE_SOURCEMAP=false react-scripts build"
   },
   "browserslist": {
     "production": [
