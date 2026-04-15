@@ -332,9 +332,10 @@ export default function App() {
     socket.on('call:ice', async ({ candidate }) => {
       if (pcRef.current && candidate) await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
     });
-    socket.on('call:rejected', () => { endCall(); alert('Call rejected.'); });
-    socket.on('call:ended',    () => endCall());
-    socket.on('call:busy',     () => { endCall(); alert('User is busy.'); });    socket.on('userOffline', (username) => setOnlineFriends(prev => prev.filter(u => u !== username)));
+    socket.on('call:rejected', () => { cleanupCall(); });
+    socket.on('call:ended',    () => { cleanupCall(); });
+    socket.on('call:busy',     () => { cleanupCall(); });
+    socket.on('userOffline', (username) => setOnlineFriends(prev => prev.filter(u => u !== username)));
     socket.on('onlineFriendsList', (list) => setOnlineFriends(list));
 
     socket.on('messagesSeen', ({ by, at }) => {
@@ -627,7 +628,7 @@ console.log("FINAL:", `${API}${endpoint}`);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       socket.emit('call:offer', { to: activeContact, from: currentUser.username, offer, type });
-    } catch { endCall(); alert('Could not access camera/microphone.'); }
+    } catch { cleanupCall(); alert('Could not access camera/microphone.'); }
   };
 
   const answerCall = async () => {
@@ -646,22 +647,27 @@ console.log("FINAL:", `${API}${endpoint}`);
       await pc.setLocalDescription(answer);
       socket.emit('call:answer', { to: incomingCall.from, answer });
       setIncomingCall(null);
-    } catch { endCall(); }
+    } catch { cleanupCall(); }
   };
 
-  const endCall = (target) => {
-    const to = target || callWith;
+  const cleanupCall = () => {
     if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
     if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; }
-    if (to) socket.emit('call:end', { to });
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     setCallState(null); setCallWith(null); setIncomingCall(null);
   };
 
+  const endCall = () => {
+    const to = callWith;
+    cleanupCall();
+    if (to) socket.emit('call:end', { to });
+  };
+
   const rejectCall = () => {
-    if (incomingCall) socket.emit('call:reject', { to: incomingCall.from });
-    setCallState(null); setIncomingCall(null);
+    const to = incomingCall?.from;
+    cleanupCall();
+    if (to) socket.emit('call:reject', { to });
   };
 
   const handleLogout = () => {
@@ -1447,7 +1453,7 @@ console.log("FINAL:", `${API}${endpoint}`);
             </div>
           )}
           <div style={{ position:'absolute', bottom:32, left:0, right:0, display:'flex', justifyContent:'center', gap:20 }}>
-            <button onClick={() => endCall()} style={{ width:64, height:64, borderRadius:'50%', background:'#e94560', border:'none', fontSize:28, cursor:'pointer', boxShadow:'0 4px 20px rgba(233,69,96,0.5)' }}>🔴</button>
+            <button onClick={endCall} style={{ width:64, height:64, borderRadius:'50%', background:'#e94560', border:'none', fontSize:28, cursor:'pointer', boxShadow:'0 4px 20px rgba(233,69,96,0.5)' }}>🔴</button>
           </div>
         </div>
       )}
