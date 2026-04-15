@@ -555,22 +555,7 @@ console.log("FINAL:", `${API}${endpoint}`);
     localStorage.removeItem('chat_token');
     localStorage.removeItem('chat_user');
     localStorage.removeItem('chat_tab');
-    setScreen('login');
-    setCurrentUser(null);
-    setToken('');
-    setChats({});
-    setFriends([]);
-    setRequests([]);
-    setActiveContact(null);
-    setSentRequests([]);
-    setSmartReplies([]);
-    setWarning('');
-    setNotification('');
-    setSearchQ('');
-    setSearchResults([]);
-    setTab('chats');
-    setOnlineFriends([]);
-    setForm({ username: '', email: '', password: '' });
+    window.location.reload();
   };
 
   const filteredMessages = (msgs) => {
