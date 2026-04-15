@@ -217,22 +217,11 @@ export default function StatusViewer({ token, currentUser, onClose }) {
               )}
             </div>
 
-            {/* 3-dot delete menu for own status */}
             {isOwn && (
-              <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-                <button
-                  onClick={() => setMenuFor(menuFor === st._id ? null : st._id)}
-                  style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-                >⋮</button>
-                {menuFor === st._id && (
-                  <div className="anim-fadeDown" style={{ position: 'absolute', right: 0, bottom: 48, background: '#f0e6de', border: '1px solid #d4b8a8', borderRadius: 12, minWidth: 160, boxShadow: '0 12px 32px rgba(0,0,0,0.7)', overflow: 'hidden', zIndex: 20 }}>
-                    <button
-                      onClick={() => deleteStatus(st._id)}
-                      style={{ width: '100%', padding: '13px 16px', background: 'none', border: 'none', color: '#c4685a', fontSize: 13, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}
-                    >🗑️ Delete Status</button>
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={e => { e.stopPropagation(); deleteStatus(st._id); }}
+                style={{ padding: '10px 18px', borderRadius: 20, background: 'rgba(196,104,90,0.85)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(4px)' }}
+              >🗑️ Delete</button>
             )}
           </div>
         </div>
