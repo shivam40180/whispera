@@ -16,7 +16,7 @@ const Message = require('./models/Message');
 const { analyzeMessage } = require('./utils/ai');
 
 const app = express();
-const getBase = (req) => `${req.protocol}://${req.get('host')}`;
+const BASE = 'https://whispera-api.onrender.com';
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -166,7 +166,7 @@ app.put('/settings', auth, async (req, res) => {
 
 app.post('/settings/profile-pic', auth, uploadProfile.single('photo'), async (req, res) => {
   try {
-    const url = `${getBase(req)}/uploads/profiles/${req.file.filename}`;
+    const url = `${BASE}/uploads/profiles/${req.file.filename}`;
     await User.findByIdAndUpdate(req.user.id, { profilePic: url });
     res.json({ profilePic: url });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -319,7 +319,7 @@ app.post('/upload/chat', auth, uploadChat.single('file'), async (req, res) => {
     if (['.jpg','.jpeg','.png','.gif','.webp'].includes(ext)) fileType = 'image';
     else if (['.mp4','.mov','.avi','.webm'].includes(ext)) fileType = 'video';
     else if (['.mp3','.wav','.ogg','.m4a'].includes(ext)) fileType = 'audio';
-    const url = `${getBase(req)}/uploads/chat/${req.file.filename}`;
+    const url = `${BASE}/uploads/chat/${req.file.filename}`;
     res.json({ fileUrl: url, fileType, fileName: req.file.originalname });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -329,7 +329,7 @@ app.post('/status', auth, uploadStatus.single('file'), async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const statusData = { type: req.body.type || 'text', content: req.body.content || '' };
-    if (req.file) statusData.fileUrl = `${getBase(req)}/uploads/status/${req.file.filename}`;
+    if (req.file) statusData.fileUrl = `${BASE}/uploads/status/${req.file.filename}`;
     user.statuses.push(statusData);
     await user.save();
     res.json({ message: 'Status posted' });

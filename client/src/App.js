@@ -3,9 +3,8 @@ import { io } from 'socket.io-client';
 import Settings from './Settings';
 import StatusViewer from './StatusViewer';
 
-const SERVER = process.env.REACT_APP_API || 'http://localhost:5001';
-const socket = io(SERVER);
-const API = SERVER;
+const socket = io('https://whispera-api.onrender.com');
+const API = 'https://whispera-api.onrender.com';
 function timeStr(d) {
   return d
     ? new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })

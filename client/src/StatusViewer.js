@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const API = process.env.REACT_APP_API || 'http://localhost:5001';
+const API = 'https://whispera-api.onrender.com';
 
 function timeAgo(d) {
   const diff = Date.now() - new Date(d);
