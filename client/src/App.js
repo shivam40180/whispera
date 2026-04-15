@@ -265,6 +265,36 @@ export default function App() {
     socket.on('profilePicChanged', ({ username, profilePic }) => {
       setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], profilePic } }));
     });
+
+    socket.on('accountDeactivated', ({ warning }) => {
+      localStorage.removeItem('chat_token');
+      localStorage.removeItem('chat_user');
+      localStorage.removeItem('chat_tab');
+      alert('⚠️ Your account has been deactivated:\n\n' + warning);
+      window.location.reload();
+    });
+
+    socket.on('accountDeleted', () => {
+      localStorage.removeItem('chat_token');
+      localStorage.removeItem('chat_user');
+      localStorage.removeItem('chat_tab');
+      alert('Your account has been deleted by admin.');
+      window.location.reload();
+    });
+
+    socket.on('friendDeactivated', ({ username }) => {
+      setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], isDeactivated: true } }));
+    });
+
+    socket.on('friendReactivated', ({ username }) => {
+      setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], isDeactivated: false } }));
+    });
+
+    socket.on('friendDeleted', ({ username }) => {
+      setFriends(prev => prev.filter(f => f !== username));
+      setFriendDetails(prev => { const d = { ...prev }; delete d[username]; return d; });
+      if (activeContactRef.current === username) setActiveContact(null);
+    });
     socket.on('messageDeleted', ({ msgId, type }) => {
       if (type === 'everyone') {
         setChats(prev => {
@@ -865,7 +895,9 @@ console.log("FINAL:", `${API}${endpoint}`);
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                      <div style={{ fontSize:14, fontWeight:600, color:'#2d1f1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f}</div>
+                      <div style={{ fontSize:14, fontWeight:600, color:'#2d1f1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {f} {friendDetails[f]?.isDeactivated && <span style={{ fontSize:10, color:'#c4685a', fontWeight:700, background:'rgba(196,104,90,0.1)', padding:'1px 6px', borderRadius:6, marginLeft:4 }}>Deactivated</span>}
+                      </div>
                       {chats[f]?.length > 0 && <span style={{ fontSize:10, color:'#7a5c52', flexShrink:0 }}>{chats[f][chats[f].length-1].time}</span>}
                     </div>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:2 }}>
@@ -1006,7 +1038,9 @@ console.log("FINAL:", `${API}${endpoint}`);
                 )}
               </div>
               <div style={{ flex:1, cursor:'pointer' }} onClick={() => setShowUserInfo(true)}>
-                <div style={{ fontWeight:700, fontSize: isMobile ? 14 : 15, color:'#2d1f1a' }}>{activeContact}</div>
+                <div style={{ fontWeight:700, fontSize: isMobile ? 14 : 15, color:'#2d1f1a' }}>
+                  {activeContact} {friendDetails[activeContact]?.isDeactivated && <span style={{ fontSize:10, color:'#c4685a', fontWeight:700, background:'rgba(196,104,90,0.1)', padding:'1px 6px', borderRadius:6, marginLeft:4 }}>Deactivated</span>}
+                </div>
                 <div style={{ fontSize:12 }}>
                   {typingUsers[activeContact]
                     ? <span style={{ color:'#b76e79', fontStyle:'italic' }}>typing...</span>

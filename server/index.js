@@ -194,6 +194,8 @@ app.delete('/admin/users/:id', adminAuth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     await Message.deleteMany({ $or: [{ sender: user.username }, { receiver: user.username }] });
     await User.updateMany({}, { $pull: { friends: user.username, requests: user.username, blocked: user.username } });
+    io.to(user.username).emit('accountDeleted');
+    user.friends.forEach(f => io.to(f).emit('friendDeleted', { username: user.username }));
     res.json({ message: 'User deleted' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -201,14 +203,17 @@ app.delete('/admin/users/:id', adminAuth, async (req, res) => {
 app.put('/admin/users/:id/deactivate', adminAuth, async (req, res) => {
   try {
     const { warning } = req.body;
-    await User.findByIdAndUpdate(req.params.id, { isDeactivated: true, deactivateWarning: warning || 'Your account has been deactivated.' });
+    const user = await User.findByIdAndUpdate(req.params.id, { isDeactivated: true, deactivateWarning: warning || 'Your account has been deactivated.' }, { new: true });
+    io.to(user.username).emit('accountDeactivated', { warning: user.deactivateWarning });
+    user.friends.forEach(f => io.to(f).emit('friendDeactivated', { username: user.username }));
     res.json({ message: 'Deactivated' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.put('/admin/users/:id/reactivate', adminAuth, async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.params.id, { isDeactivated: false, deactivateWarning: '' });
+    const user = await User.findByIdAndUpdate(req.params.id, { isDeactivated: false, deactivateWarning: '' }, { new: true });
+    user.friends.forEach(f => io.to(f).emit('friendReactivated', { username: user.username }));
     res.json({ message: 'Reactivated' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -254,7 +259,7 @@ app.get('/users/search', auth, async (req, res) => {
   if (!q) return res.json([]);
   try {
     const me = await User.findById(req.user.id).select('friends');
-    const users = await User.find({ username: { $regex: q, $options: 'i' }, _id: { $ne: req.user.id } })
+    const users = await User.find({ username: { $regex: q, $options: 'i' }, _id: { $ne: req.user.id }, isDeactivated: { $ne: true } })
       .select('username profilePic friends').limit(10);
     res.json(users.map(u => ({ _id: u._id, username: u.username, profilePic: u.profilePic, mutuals: u.friends.filter(f => me.friends.includes(f)).length })));
   } catch { res.status(500).json({ error: 'Search failed' }); }
@@ -263,7 +268,7 @@ app.get('/users/search', auth, async (req, res) => {
 app.get('/users/suggested', auth, async (req, res) => {
   try {
     const me = await User.findById(req.user.id).select('friends blocked');
-    const users = await User.find({ _id: { $ne: req.user.id }, username: { $nin: [...me.blocked] } })
+    const users = await User.find({ _id: { $ne: req.user.id }, username: { $nin: [...me.blocked] }, isDeactivated: { $ne: true } })
       .select('username profilePic friends').limit(15);
     res.json(users.map(u => ({ _id: u._id, username: u.username, profilePic: u.profilePic, mutuals: u.friends.filter(f => me.friends.includes(f)).length })));
   } catch { res.status(500).json({ error: 'Failed' }); }
@@ -272,7 +277,7 @@ app.get('/users/suggested', auth, async (req, res) => {
 app.get('/friends', auth, async (req, res) => {
   try {
     const me = await User.findById(req.user.id).select('friends requests');
-    const friendDetails = await User.find({ username: { $in: me.friends } }).select('username profilePic lastSeen privacy');
+    const friendDetails = await User.find({ username: { $in: me.friends } }).select('username profilePic lastSeen privacy isDeactivated');
     res.json({ friends: me.friends, requests: me.requests, friendDetails });
   } catch { res.status(500).json({ error: 'Failed to fetch' }); }
 });
