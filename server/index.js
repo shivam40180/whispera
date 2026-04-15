@@ -39,10 +39,6 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 const onlineUsers = {};
 
-const uploadChat    = multer({ storage: memStorage, limits: { fileSize: 50*1024*1024 } });
-const uploadProfile = multer({ storage: memStorage, limits: { fileSize: 5*1024*1024  } });
-const uploadStatus  = multer({ storage: memStorage, limits: { fileSize: 50*1024*1024 } });
-
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
