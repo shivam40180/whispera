@@ -282,12 +282,12 @@ export default function App() {
       window.location.reload();
     });
 
-    socket.on('friendDeactivated', ({ username }) => {
-      setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], isDeactivated: true } }));
+    socket.on('friendDeactivated', ({ username, profilePic }) => {
+      setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], username, profilePic: profilePic || prev[username]?.profilePic, isDeactivated: true } }));
     });
 
-    socket.on('friendReactivated', ({ username }) => {
-      setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], isDeactivated: false } }));
+    socket.on('friendReactivated', ({ username, profilePic }) => {
+      setFriendDetails(prev => ({ ...prev, [username]: { ...prev[username], username, profilePic: profilePic || prev[username]?.profilePic, isDeactivated: false } }));
     });
 
     socket.on('friendDeleted', ({ username }) => {

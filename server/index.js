@@ -50,10 +50,6 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 const onlineUsers = {};
 
-const storage = (folder) => multer.diskStorage({
-  destination: (req, file, cb) => cb(null, `uploads/${folder}`),
-  filename: (req, file, cb) => cb(null, uuidv4() + path.extname(file.originalname))
-});
 const uploadChat    = multer({ storage: makeStorage('chat'),    limits: { fileSize: 50*1024*1024 } });
 const uploadProfile = multer({ storage: makeStorage('profiles'), limits: { fileSize: 5*1024*1024  } });
 const uploadStatus  = multer({ storage: makeStorage('status'),   limits: { fileSize: 50*1024*1024 } });
@@ -205,7 +201,7 @@ app.put('/admin/users/:id/deactivate', adminAuth, async (req, res) => {
     const { warning } = req.body;
     const user = await User.findByIdAndUpdate(req.params.id, { isDeactivated: true, deactivateWarning: warning || 'Your account has been deactivated.' }, { new: true });
     io.to(user.username).emit('accountDeactivated', { warning: user.deactivateWarning });
-    user.friends.forEach(f => io.to(f).emit('friendDeactivated', { username: user.username }));
+    user.friends.forEach(f => io.to(f).emit('friendDeactivated', { username: user.username, profilePic: user.profilePic }));
     res.json({ message: 'Deactivated' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -213,7 +209,7 @@ app.put('/admin/users/:id/deactivate', adminAuth, async (req, res) => {
 app.put('/admin/users/:id/reactivate', adminAuth, async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(req.params.id, { isDeactivated: false, deactivateWarning: '' }, { new: true });
-    user.friends.forEach(f => io.to(f).emit('friendReactivated', { username: user.username }));
+    user.friends.forEach(f => io.to(f).emit('friendReactivated', { username: user.username, profilePic: user.profilePic }));
     res.json({ message: 'Reactivated' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
