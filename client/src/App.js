@@ -1141,7 +1141,7 @@ console.log("FINAL:", `${API}${endpoint}`);
                 <span style={{ fontSize:11, color:'#d4a882', fontWeight:700, flexShrink:0 }}>💡</span>
                 {smartReplies.map((r, i) => (
                   <button key={i} onClick={() => send(r)}
-                    style={{ background:'rgba(183,110,121,0.1)', border:'1px solid rgba(183,110,121,0.3)', color:'#f0e6de', fontSize:12, padding:'6px 14px', borderRadius:20, cursor:'pointer', fontWeight:500, whiteSpace:'nowrap', transition:'background 0.15s' }}>
+                    style={{ background:'rgba(183,110,121,0.12)', border:'1px solid rgba(183,110,121,0.4)', color:'#7a3040', fontSize:12, padding:'6px 14px', borderRadius:20, cursor:'pointer', fontWeight:600, whiteSpace:'nowrap', transition:'background 0.15s' }}>
                     {r}
                   </button>
                 ))}
