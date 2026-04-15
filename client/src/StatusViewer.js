@@ -131,7 +131,7 @@ export default function StatusViewer({ token, currentUser, onClose }) {
     const user = statuses[viewing.userIndex];
     const st = user?.statuses[viewing.statusIndex];
     if (!user || !st) { setViewing(null); return null; }
-    const isOwn = user.username === currentUser.username;
+    const isOwn = user.username === currentUser?.username;
 
     return (
       <div className="anim-fadeIn" style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 2000, display: 'flex', flexDirection: 'column' }}
@@ -187,7 +187,7 @@ export default function StatusViewer({ token, currentUser, onClose }) {
         </div>
 
         {/* Tap zones */}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', zIndex: 5 }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', zIndex: 3 }}>
           <div style={{ flex: 1 }} onClick={goPrev} />
           <div style={{ flex: 1 }} onClick={goNext} />
         </div>
@@ -195,8 +195,8 @@ export default function StatusViewer({ token, currentUser, onClose }) {
         {/* Content */}
         <div className="anim-scaleIn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
           {st.type === 'text' && <div style={{ fontSize: 28, color: '#fff', fontWeight: 700, lineHeight: 1.5, textAlign: 'center', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>{st.content}</div>}
-          {st.type === 'image' && <img src={st.fileUrl} alt="status" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 12, objectFit: 'contain' }} />}
-          {st.type === 'video' && <video src={st.fileUrl} controls autoPlay style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 12 }} />}
+          {st.type === 'image' && <img src={st.fileUrl?.replace(/^http:\/\/192\.168\.[^/]+/, 'https://whispera-api.onrender.com')} alt="status" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 12, objectFit: 'contain' }} />}
+          {st.type === 'video' && <video src={st.fileUrl?.replace(/^http:\/\/192\.168\.[^/]+/, 'https://whispera-api.onrender.com')} controls autoPlay style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 12 }} />}
           {st.type === 'audio' && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 64, marginBottom: 20 }}>🎵</div>
@@ -220,7 +220,7 @@ export default function StatusViewer({ token, currentUser, onClose }) {
             {isOwn && (
               <button
                 onClick={e => { e.stopPropagation(); deleteStatus(st._id); }}
-                style={{ padding: '10px 18px', borderRadius: 20, background: 'rgba(196,104,90,0.85)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(4px)' }}
+                style={{ padding: '10px 18px', borderRadius: 20, background: 'rgba(196,104,90,0.9)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, position: 'relative', zIndex: 20 }}
               >🗑️ Delete</button>
             )}
           </div>
