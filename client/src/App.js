@@ -120,6 +120,15 @@ export default function App() {
   const callWithRef = useRef(null);
   const incomingCallRef = useRef(null);
 
+  const remoteVideoCallbackRef = (el) => {
+    remoteVideoRef.current = el;
+    if (el && remoteStreamRef.current) el.srcObject = remoteStreamRef.current;
+  };
+  const localVideoCallbackRef = (el) => {
+    localVideoRef.current = el;
+    if (el && localStreamRef.current) el.srcObject = localStreamRef.current;
+  };
+
   useEffect(() => { callWithRef.current = callWith; }, [callWith]);
   useEffect(() => { incomingCallRef.current = incomingCall; }, [incomingCall]);
 
@@ -644,7 +653,6 @@ console.log("FINAL:", `${API}${endpoint}`);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
       localStreamRef.current = stream;
-      setTimeout(() => { if (localVideoRef.current) localVideoRef.current.srcObject = stream; }, 100);
       const pc = createPC(activeContact);
       pcRef.current = pc;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
@@ -666,7 +674,6 @@ console.log("FINAL:", `${API}${endpoint}`);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: callType === 'video', audio: true });
       localStreamRef.current = stream;
-      setTimeout(() => { if (localVideoRef.current) localVideoRef.current.srcObject = stream; }, 100);
       const pc = createPC(caller);
       pcRef.current = pc;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
@@ -699,15 +706,6 @@ console.log("FINAL:", `${API}${endpoint}`);
     cleanupCall();
     if (to) socket.emit('call:reject', { to });
   };
-
-  useEffect(() => {
-    if (callState === 'active' || callState === 'calling') {
-      if (localVideoRef.current && localStreamRef.current)
-        localVideoRef.current.srcObject = localStreamRef.current;
-      if (remoteVideoRef.current && remoteStreamRef.current)
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
-    }
-  }, [callState]);
 
   const handleLogout = () => {
     socket.emit('logout', currentUser?.username);
@@ -1474,7 +1472,7 @@ console.log("FINAL:", `${API}${endpoint}`);
       {/* Active call / calling screen */}
       {(callState === 'active' || callState === 'calling') && (
         <div key={callWith} className="anim-fadeIn" style={{ position:'fixed', inset:0, zIndex:9997, background:'#111', display:'flex', flexDirection:'column' }}>
-          <video ref={remoteVideoRef} autoPlay playsInline style={{ flex:1, width:'100%', objectFit:'cover', background:'#111', display: callType === 'video' ? 'block' : 'none' }} />
+          <video ref={remoteVideoCallbackRef} autoPlay playsInline style={{ flex:1, width:'100%', objectFit:'cover', background:'#111', display: callType === 'video' ? 'block' : 'none' }} />
           {callType === 'audio' && (
             <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#1a1a2e' }}>
               <div style={{ width:100, height:100, borderRadius:'50%', background:'linear-gradient(135deg,#b76e79,#a05a64)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:40, marginBottom:16 }}>
@@ -1484,7 +1482,7 @@ console.log("FINAL:", `${API}${endpoint}`);
               <div style={{ color:'#a88070', fontSize:13, marginTop:8 }}>{callState === 'calling' ? 'Calling...' : '🎵 Audio call connected'}</div>
             </div>
           )}
-          {callType === 'video' && <video ref={localVideoRef} autoPlay playsInline muted style={{ position:'absolute', bottom:100, right:16, width:100, height:140, borderRadius:12, objectFit:'cover', border:'2px solid #fff', background:'#222' }} />}
+          {callType === 'video' && <video ref={localVideoCallbackRef} autoPlay playsInline muted style={{ position:'absolute', bottom:100, right:16, width:100, height:140, borderRadius:12, objectFit:'cover', border:'2px solid #fff', background:'#222' }} />}
           {callType === 'video' && (
             <div style={{ position:'absolute', top:40, left:0, right:0, textAlign:'center' }}>
               <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>{callWith}</div>
