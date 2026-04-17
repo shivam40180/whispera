@@ -122,11 +122,17 @@ export default function App() {
 
   const remoteVideoCallbackRef = (el) => {
     remoteVideoRef.current = el;
-    if (el && remoteStreamRef.current) el.srcObject = remoteStreamRef.current;
+    if (el && remoteStreamRef.current) {
+      el.srcObject = remoteStreamRef.current;
+      el.play().catch(() => {});
+    }
   };
   const localVideoCallbackRef = (el) => {
     localVideoRef.current = el;
-    if (el && localStreamRef.current) el.srcObject = localStreamRef.current;
+    if (el && localStreamRef.current) {
+      el.srcObject = localStreamRef.current;
+      el.play().catch(() => {});
+    }
   };
 
   useEffect(() => { callWithRef.current = callWith; }, [callWith]);
@@ -345,6 +351,11 @@ export default function App() {
       if (pcRef.current) {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         setCallState('active');
+        // apply local video for caller side
+        if (localVideoRef.current && localStreamRef.current) {
+          localVideoRef.current.srcObject = localStreamRef.current;
+          localVideoRef.current.play().catch(() => {});
+        }
       }
     });
     socket.on('call:ice', async ({ candidate }) => {
@@ -629,17 +640,20 @@ console.log("FINAL:", `${API}${endpoint}`);
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
       ]
     });
     pc.onicecandidate = e => {
       if (e.candidate) socket.emit('call:ice', { to: targetUser, candidate: e.candidate });
     };
     pc.ontrack = e => {
-      remoteStreamRef.current = e.streams[0];
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
-    };
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'connected') setCallState('active');
+      const stream = e.streams[0];
+      remoteStreamRef.current = stream;
+      // apply immediately if element already mounted
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+        remoteVideoRef.current.play().catch(() => {});
+      }
     };
     return pc;
   };
@@ -653,6 +667,7 @@ console.log("FINAL:", `${API}${endpoint}`);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
       localStreamRef.current = stream;
+      if (localVideoRef.current) { localVideoRef.current.srcObject = stream; localVideoRef.current.play().catch(() => {}); }
       const pc = createPC(activeContact);
       pcRef.current = pc;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
@@ -666,13 +681,13 @@ console.log("FINAL:", `${API}${endpoint}`);
     if (!incomingCall) return;
     const caller = incomingCall.from;
     const savedOffer = incomingCall.offer;
+    const type = callType;
     setCallWith(caller);
     callWithRef.current = caller;
-    setCallState('active');
     setIncomingCall(null);
     incomingCallRef.current = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: callType === 'video', audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
       localStreamRef.current = stream;
       const pc = createPC(caller);
       pcRef.current = pc;
@@ -681,6 +696,9 @@ console.log("FINAL:", `${API}${endpoint}`);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit('call:answer', { to: caller, answer });
+      // set active AFTER stream ready so video element gets stream via callback ref
+      setCallState('active');
+      if (localVideoRef.current) { localVideoRef.current.srcObject = stream; localVideoRef.current.play().catch(() => {}); }
     } catch { cleanupCall(); }
   };
 
